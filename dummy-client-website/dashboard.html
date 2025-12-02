@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuickServe - My Account</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="../popup-widget/popup.css">
+</head>
+<body>
+  <div class="dashboard-container">
+    <header class="dashboard-header">
+      <div class="header-content">
+        <div class="brand-logo-dashboard">
+          <span class="logo-icon">🚗</span>
+          <h1>QuickServe</h1>
+        </div>
+        <div class="user-info">
+          <span id="user-email-display">Loading...</span>
+          <button id="logout-btn" class="btn-secondary">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="dashboard-main">
+      <div class="dashboard-grid">
+        <!-- Account Overview -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Account Overview</h2>
+          </div>
+          <div class="card-body">
+            <div class="stat-item">
+              <span class="stat-label">Account ID:</span>
+              <span class="stat-value" id="business-id-display">DEMO001</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Email:</span>
+              <span class="stat-value" id="email-display">-</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Status:</span>
+              <span class="stat-value status-active">Active Member</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Rewards Points:</span>
+              <span class="stat-value">1,240 pts</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Services -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Our Services</h2>
+          </div>
+          <div class="card-body">
+            <div class="service-grid">
+              <div class="service-item">
+                <span class="service-emoji">🚗</span>
+                <h3>Ride Booking</h3>
+                <p>Book cabs & auto rides instantly</p>
+              </div>
+              <div class="service-item">
+                <span class="service-emoji">🍕</span>
+                <h3>Food Delivery</h3>
+                <p>Order from thousands of restaurants</p>
+              </div>
+              <div class="service-item">
+                <span class="service-emoji">📦</span>
+                <h3>Package Delivery</h3>
+                <p>Send packages anywhere in the city</p>
+              </div>
+              <div class="service-item">
+                <span class="service-emoji">🛒</span>
+                <h3>Grocery Shopping</h3>
+                <p>Fresh groceries at your doorstep</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Recent Orders</h2>
+          </div>
+          <div class="card-body">
+            <ul class="activity-list">
+              <li class="activity-item">
+                <span class="activity-icon">🚗</span>
+                <div class="activity-details">
+                  <span class="activity-text">Ride to Downtown</span>
+                  <span class="activity-meta">Yesterday, 6:30 PM • ₹245</span>
+                </div>
+              </li>
+              <li class="activity-item">
+                <span class="activity-icon">🍕</span>
+                <div class="activity-details">
+                  <span class="activity-text">Pizza from Domino's</span>
+                  <span class="activity-meta">Dec 1, 8:15 PM • ₹580</span>
+                </div>
+              </li>
+              <li class="activity-item">
+                <span class="activity-icon">🛒</span>
+                <div class="activity-details">
+                  <span class="activity-text">Grocery Delivery</span>
+                  <span class="activity-meta">Nov 30, 11:20 AM • ₹1,240</span>
+                </div>
+              </li>
+              <li class="activity-item">
+                <span class="activity-icon">🚗</span>
+                <div class="activity-details">
+                  <span class="activity-text">Auto to Office</span>
+                  <span class="activity-meta">Nov 29, 9:00 AM • ₹95</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Quick Actions</h2>
+          </div>
+          <div class="card-body">
+            <button class="btn-action">Book a Ride</button>
+            <button class="btn-action">Order Food</button>
+            <button class="btn-action">View Offers</button>
+            <button class="btn-action">Transaction History</button>
+          </div>
+        </div>
+
+        <!-- Savings Card -->
+        <div class="card card-highlight">
+          <div class="card-header">
+            <h2>Your Savings This Month</h2>
+          </div>
+          <div class="card-body">
+            <div class="savings-display">
+              <span class="savings-amount">₹850</span>
+              <span class="savings-label">saved with QuickServe offers</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Widget Info -->
+        <div class="card card-info">
+          <div class="card-header">
+            <h2>Personalized Offers</h2>
+          </div>
+          <div class="card-body">
+            <p>We have exclusive offers tailored just for you!</p>
+            <p class="info-note">Check the popup for your special discount.</p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Script.js handles the dynamic widget injection -->
+  <script src="script.js"></script>
+</body>
+</html>
