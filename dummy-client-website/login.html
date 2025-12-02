@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuickServe - Login</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="../popup-widget/popup.css">
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="brand-logo">
+          <span class="logo-icon">🚗</span>
+          <h1>QuickServe</h1>
+        </div>
+        <p>Rides • Food • Delivery at your doorstep</p>
+      </div>
+
+      <form id="login-form" class="login-form">
+        <div class="form-group">
+          <label for="customer-email">Email Address</label>
+          <input
+            type="email"
+            id="customer-email"
+            name="email"
+            placeholder="your.email@example.com"
+            required
+            autocomplete="email"
+          >
+        </div>
+
+        <button type="submit" class="btn-primary">
+          Continue
+        </button>
+      </form>
+
+      <div class="login-footer">
+        <p class="demo-note">New to QuickServe? <a href="#">Sign up</a></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
