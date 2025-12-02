@@ -24,7 +24,7 @@ class CustomerService:
             {
                 "id": "c1",
                 "name": "Rahim Ahmed",
-                "email": "rahim@example.com",
+                "email": "nufsat@iut-dhaka.edu",
                 "phone": "+8801712345678",
                 "segment_id": "s1",
                 "churn_score": 0.15,

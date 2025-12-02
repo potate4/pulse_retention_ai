@@ -141,12 +141,12 @@ const EmailCampaign = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-light-bg dark:bg-dark-bg py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Email Campaign</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="text-3xl font-bold text-light-text-primary dark:text-dark-text-primary">Email Campaign</h1>
+          <p className="mt-2 text-light-text-secondary dark:text-dark-text-secondary">
             Create and send personalized emails to your customer segments
           </p>
         </div>
@@ -156,7 +156,7 @@ const EmailCampaign = () => {
           {/* Left Column - Selection */}
           <div className="lg:col-span-2 space-y-6">
             {/* Segment Selector */}
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="bg-light-surface dark:bg-dark-surface rounded-lg shadow-md p-6 border border-light-border dark:border-dark-border">
               <SegmentSelector
                 segments={segments}
                 selectedSegment={selectedSegment}
@@ -167,9 +167,9 @@ const EmailCampaign = () => {
 
             {/* Customer Table */}
             {selectedSegment && (
-              <div className="bg-white rounded-lg shadow-md">
-                <div className="px-6 py-4 border-b border-gray-200">
-                  <h2 className="text-lg font-semibold text-gray-900">
+              <div className="bg-light-surface dark:bg-dark-surface rounded-lg shadow-md border border-light-border dark:border-dark-border">
+                <div className="px-6 py-4 border-b border-light-border dark:border-dark-border">
+                  <h2 className="text-lg font-semibold text-light-text-primary dark:text-dark-text-primary">
                     Customers in Segment
                   </h2>
                 </div>
@@ -184,19 +184,19 @@ const EmailCampaign = () => {
 
             {/* Action Buttons */}
             {selectedSegment && customers.length > 0 && (
-              <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="bg-light-surface dark:bg-dark-surface rounded-lg shadow-md p-6 border border-light-border dark:border-dark-border">
                 <div className="flex gap-3">
                   <button
                     onClick={handleGeneratePreview}
                     disabled={loading || selectedCustomers.length === 0}
-                    className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium"
+                    className="flex-1 px-6 py-3 bg-primary-teal text-white rounded-lg hover:bg-primary-slate disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed font-medium"
                   >
                     {loading ? 'Generating...' : 'Generate Email Preview'}
                   </button>
                   <button
                     onClick={handleSendEmails}
                     disabled={!emailPreview || sending || selectedCustomers.length === 0}
-                    className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium"
+                    className="flex-1 px-6 py-3 bg-primary-magenta text-white rounded-lg hover:bg-primary-mauve disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed font-medium"
                   >
                     {sending ? 'Sending...' : `Send to ${selectedCustomers.length} Customer(s)`}
                   </button>
@@ -206,11 +206,11 @@ const EmailCampaign = () => {
 
             {/* Send Result */}
             {sendResult && (
-              <div className={`rounded-lg p-4 ${sendResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-                <h3 className={`font-semibold ${sendResult.success ? 'text-green-900' : 'text-red-900'}`}>
+              <div className={`rounded-lg p-4 ${sendResult.success ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700' : 'bg-red-50 dark:bg-primary-magenta/20 border border-red-200 dark:border-primary-magenta'}`}>
+                <h3 className={`font-semibold ${sendResult.success ? 'text-green-900 dark:text-green-300' : 'text-red-900 dark:text-primary-magenta'}`}>
                   {sendResult.message}
                 </h3>
-                <p className={`text-sm mt-1 ${sendResult.success ? 'text-green-700' : 'text-red-700'}`}>
+                <p className={`text-sm mt-1 ${sendResult.success ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-primary-mauve'}`}>
                   Sent: {sendResult.sent_count} | Failed: {sendResult.failed_count}
                 </p>
               </div>
@@ -227,7 +227,7 @@ const EmailCampaign = () => {
                 onEdit={handleEditTemplate}
               />
             ) : (
-              <div className="bg-white rounded-lg shadow-md p-6 text-center text-gray-500">
+              <div className="bg-light-surface dark:bg-dark-surface rounded-lg shadow-md p-6 text-center text-light-text-secondary dark:text-dark-text-secondary border border-light-border dark:border-dark-border">
                 <p>Select a segment and generate a preview to see the email template</p>
               </div>
             )}

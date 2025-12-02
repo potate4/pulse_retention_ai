@@ -48,13 +48,13 @@ const EditTemplate = () => {
 
   if (!subject && !htmlBody) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-light-bg dark:bg-dark-bg flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">No Template Data</h2>
-          <p className="text-gray-600 mb-4">Please generate a preview first</p>
+          <h2 className="text-2xl font-bold text-light-text-primary dark:text-dark-text-primary mb-2">No Template Data</h2>
+          <p className="text-light-text-secondary dark:text-dark-text-secondary mb-4">Please generate a preview first</p>
           <button
             onClick={() => navigate('/email-campaign')}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="px-6 py-2 bg-primary-teal text-white rounded-lg hover:bg-primary-slate"
           >
             Go to Email Campaign
           </button>
@@ -64,7 +64,7 @@ const EditTemplate = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-light-bg dark:bg-dark-bg py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <TemplateEditor
           initialSubject={subject}
