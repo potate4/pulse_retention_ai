@@ -52,12 +52,12 @@ const ROIDashboard = () => {
   }, [timeframe])
 
   const MetricCard = ({ title, value, subtitle, icon, color, trend }) => (
-    <div className="bg-white rounded-lg shadow p-6 border-l-4" style={{ borderColor: color }}>
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4" style={{ borderColor: color }}>
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-gray-500 text-sm">{title}</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{value}</p>
-          {subtitle && <p className="text-gray-600 text-xs mt-1">{subtitle}</p>}
+          <p className="text-gray-500 dark:text-gray-400 text-sm">{title}</p>
+          <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{value}</p>
+          {subtitle && <p className="text-gray-600 dark:text-gray-300 text-xs mt-1">{subtitle}</p>}
           {trend && (
             <p className={`text-xs mt-1 ${trend > 0 ? 'text-green-600' : 'text-red-600'}`}>
               {trend > 0 ? '↑' : '↓'} {Math.abs(trend)}% from last period
@@ -187,10 +187,10 @@ const ROIDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-          <p className="mt-4 text-gray-600">Loading ROI data...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading ROI data...</p>
         </div>
       </div>
     )
@@ -198,10 +198,10 @@ const ROIDashboard = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white rounded-lg shadow p-6 max-w-md w-full">
-          <h2 className="text-lg font-semibold text-red-600 mb-2">Error Loading ROI Data</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 max-w-md w-full">
+          <h2 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-2">Error Loading ROI Data</h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-4">{error}</p>
           <button
             onClick={() => window.location.reload()}
             className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition"
@@ -214,47 +214,55 @@ const ROIDashboard = () => {
   }
 
   return (
-    <Layout activePage="roi">
-      <div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div style={{ marginBottom: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h1 style={{ margin: '0 0 10px 0', fontSize: '32px', color: '#1e293b' }}>ROI Dashboard</h1>
-            <p style={{ margin: '0', color: '#64748b', fontSize: '16px' }}>Business profitability and return on investment analysis</p>
-          </div>
-          
-          {/* Timeframe Selector */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => setTimeframe('monthly')}
-              className={`px-4 py-2 rounded-lg font-medium transition ${
-                timeframe === 'monthly'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              Monthly
-            </button>
-            <button
-              onClick={() => setTimeframe('quarterly')}
-              className={`px-4 py-2 rounded-lg font-medium transition ${
-                timeframe === 'quarterly'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              Quarterly
-            </button>
-            <button
-              onClick={() => setTimeframe('yearly')}
-              className={`px-4 py-2 rounded-lg font-medium transition ${
-                timeframe === 'yearly'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              Yearly
-            </button>
+        <div className="mb-8">
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="text-green-600 hover:text-green-700 text-sm font-medium mb-4"
+          >
+            ← Back to Dashboard
+          </button>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">ROI Dashboard</h1>
+              <p className="text-gray-600 dark:text-gray-300 mt-2">Business profitability and return on investment analysis</p>
+            </div>
+            
+            {/* Timeframe Selector */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setTimeframe('monthly')}
+                className={`px-4 py-2 rounded-lg font-medium transition ${
+                  timeframe === 'monthly'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setTimeframe('quarterly')}
+                className={`px-4 py-2 rounded-lg font-medium transition ${
+                  timeframe === 'quarterly'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                Quarterly
+              </button>
+              <button
+                onClick={() => setTimeframe('yearly')}
+                className={`px-4 py-2 rounded-lg font-medium transition ${
+                  timeframe === 'yearly'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                Yearly
+              </button>
+            </div>
           </div>
         </div>
 

@@ -14,7 +14,6 @@ import ROIDashboard from './pages/ROIDashboard'
 import ChurnPrediction from './pages/ChurnPrediction'
 import Predictions from './pages/Predictions'
 import ProtectedRoute from './components/ProtectedRoute'
-import ThemeToggle from './components/ThemeToggle'
 
 function App() {
   const { isAuthenticated, initializeAuth } = useAuthStore()
@@ -28,7 +27,6 @@ function App() {
 
   return (
     <>
-      <ThemeToggle />
       <Routes>
         <Route path="/login" element={
           isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />
