@@ -145,7 +145,7 @@ const EmailCampaign = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header with Back Button */}
         <div className="mb-8">
@@ -158,8 +158,8 @@ const EmailCampaign = () => {
         
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Email Campaign</h1>
-              <p className="mt-2 text-gray-600">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Email Campaign</h1>
+              <p className="mt-2 text-gray-600 dark:text-gray-300">
                 Create and send personalized emails to your customer segments
               </p>
             </div>
@@ -174,8 +174,8 @@ const EmailCampaign = () => {
           {/* Left Column - Selection */}
           <div className="lg:col-span-2 space-y-6">
             {/* Segment Selector */}
-            <div className="bg-white rounded-lg shadow p-6 border-l-4 border-indigo-500">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Select Target Segment</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-indigo-500">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Select Target Segment</h2>
               <SegmentSelector
                 segments={segments}
                 selectedSegment={selectedSegment}
@@ -186,12 +186,12 @@ const EmailCampaign = () => {
 
             {/* Customer Table */}
             {selectedSegment && (
-              <div className="bg-white rounded-lg shadow border-l-4 border-cyan-500">
-                <div className="px-6 py-4 border-b border-gray-200">
-                  <h2 className="text-lg font-semibold text-gray-900">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow border-l-4 border-cyan-500">
+                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                     Customers in Segment
                   </h2>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     {customers.length} customers found • {selectedCustomers.length} selected
                   </p>
                 </div>
@@ -206,8 +206,8 @@ const EmailCampaign = () => {
 
             {/* Action Buttons */}
             {selectedSegment && customers.length > 0 && (
-              <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Campaign Actions</h2>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-green-500">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Campaign Actions</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <button
                     onClick={handleGeneratePreview}
@@ -256,14 +256,14 @@ const EmailCampaign = () => {
                     <div className="flex items-center gap-6 mt-3">
                       <div className="flex items-center gap-2">
                         <span className={`text-sm font-medium ${
-                          sendResult.success ? 'text-green-700' : 'text-red-700'
+                          sendResult.success ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'
                         }`}>
                           Sent: {sendResult.sent_count}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className={`text-sm font-medium ${
-                          sendResult.success ? 'text-green-700' : 'text-red-700'
+                          sendResult.success ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'
                         }`}>
                           Failed: {sendResult.failed_count}
                         </span>
@@ -286,14 +286,14 @@ const EmailCampaign = () => {
                   onEdit={handleEditTemplate}
                 />
               ) : (
-                <div className="bg-white rounded-lg shadow p-8 text-center border-l-4 border-gray-300">
-                  <div className="w-16 h-16 bg-gray-100 rounded-lg mx-auto flex items-center justify-center mb-4">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center border-l-4 border-gray-300 dark:border-gray-600">
+                  <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-lg mx-auto flex items-center justify-center mb-4">
                     <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Email Preview</h3>
-                  <p className="text-gray-500 text-sm">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Email Preview</h3>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">
                     Select a segment and generate a preview to see your email template
                   </p>
                 </div>

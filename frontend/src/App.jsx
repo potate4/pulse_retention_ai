@@ -12,7 +12,6 @@ import EmailHistory from './pages/EmailHistory'
 import Analytics from './pages/Analytics'
 import ROIDashboard from './pages/ROIDashboard'
 import ProtectedRoute from './components/ProtectedRoute'
-import ThemeToggle from './components/ThemeToggle'
 
 function App() {
   const { isAuthenticated, initializeAuth } = useAuthStore()
@@ -26,7 +25,6 @@ function App() {
 
   return (
     <>
-      <ThemeToggle />
       <Routes>
         <Route path="/login" element={
           isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />
