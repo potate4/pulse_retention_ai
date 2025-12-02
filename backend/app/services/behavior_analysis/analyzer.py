@@ -188,34 +188,88 @@ def batch_analyze_behaviors(
         ).all()
 
         total_customers = len(customers)
-        analyzed = 0
-        errors = []
+        customer_ids = [c.id for c in customers]
 
         print(f"Analyzing behavior for {total_customers} customers (org_type: {org_type})...")
 
+        # Get existing analyses and clean up duplicates
+        existing_analyses = db.query(BehaviorAnalysis).filter(
+            BehaviorAnalysis.customer_id.in_(customer_ids)
+        ).all()
+
+        # Build lookup and handle duplicates by keeping only the most recent
+        existing_analyses_lookup = {}
+        duplicate_analyses = []
+
+        for analysis in existing_analyses:
+            if analysis.customer_id in existing_analyses_lookup:
+                # Found a duplicate - keep the most recent one
+                existing_analysis = existing_analyses_lookup[analysis.customer_id]
+                if analysis.analyzed_at > existing_analysis.analyzed_at:
+                    # This analysis is newer, remove the old one
+                    duplicate_analyses.append(existing_analysis)
+                    existing_analyses_lookup[analysis.customer_id] = analysis
+                else:
+                    # Keep the existing one, mark this for removal
+                    duplicate_analyses.append(analysis)
+            else:
+                existing_analyses_lookup[analysis.customer_id] = analysis
+
+        # Delete duplicate analyses if found
+        if duplicate_analyses:
+            print(f"Found {len(duplicate_analyses)} duplicate analyses, cleaning up...")
+            try:
+                for dup_analysis in duplicate_analyses:
+                    db.delete(dup_analysis)
+                db.commit()
+                print(f"Removed {len(duplicate_analyses)} duplicate analyses")
+            except Exception as cleanup_error:
+                print(f"Warning: Could not clean up duplicates: {str(cleanup_error)}")
+                db.rollback()
+                # Rebuild the lookup after rollback
+                existing_analyses = db.query(BehaviorAnalysis).filter(
+                    BehaviorAnalysis.customer_id.in_(customer_ids)
+                ).all()
+                existing_analyses_lookup = {analysis.customer_id: analysis for analysis in existing_analyses}
+
+        print(f"  Existing analyses found: {len(existing_analyses_lookup)}")
+
+        # Prepare batches for bulk operations
+        analyzed = 0
+        errors = []
+        analyses_to_add = []
+        analyses_to_update = []
+        processed_customer_ids = set()  # Track processed customers to prevent duplicates
+
         for idx, customer in enumerate(customers, 1):
             try:
+                # Skip if already processed in this batch
+                if customer.id in processed_customer_ids:
+                    continue
+
                 # Analyze customer
                 analysis_data = analyze_customer(customer.id, org_type, db)
 
                 # Check if analysis already exists
-                existing_analysis = db.query(BehaviorAnalysis).filter(
-                    BehaviorAnalysis.customer_id == customer.id
-                ).first()
+                existing_analysis = existing_analyses_lookup.get(customer.id)
 
                 if existing_analysis:
-                    # Update existing
-                    existing_analysis.org_type = org_type
-                    existing_analysis.behavior_score = analysis_data['behavior_score']
-                    existing_analysis.activity_trend = analysis_data['activity_trend']
-                    existing_analysis.value_trend = analysis_data['value_trend']
-                    existing_analysis.engagement_trend = analysis_data['engagement_trend']
-                    existing_analysis.risk_signals = analysis_data['risk_signals']
-                    existing_analysis.recommendations = analysis_data['recommendations']
-                    existing_analysis.analyzed_at = datetime.utcnow()
-                    existing_analysis.extra_data = analysis_data.get('extra_data', {})
+                    # Prepare update data as dictionary
+                    update_data = {
+                        'id': existing_analysis.id,
+                        'org_type': org_type,
+                        'behavior_score': analysis_data['behavior_score'],
+                        'activity_trend': analysis_data['activity_trend'],
+                        'value_trend': analysis_data['value_trend'],
+                        'engagement_trend': analysis_data['engagement_trend'],
+                        'risk_signals': analysis_data['risk_signals'],
+                        'recommendations': analysis_data['recommendations'],
+                        'analyzed_at': datetime.utcnow(),
+                        'extra_data': analysis_data.get('extra_data', {})
+                    }
+                    analyses_to_update.append(update_data)
                 else:
-                    # Create new
+                    # Create new analysis object
                     new_analysis = BehaviorAnalysis(
                         customer_id=customer.id,
                         organization_id=organization_id,
@@ -228,44 +282,132 @@ def batch_analyze_behaviors(
                         recommendations=analysis_data['recommendations'],
                         extra_data=analysis_data.get('extra_data', {})
                     )
-                    db.add(new_analysis)
+                    analyses_to_add.append(new_analysis)
 
+                # Mark customer as processed
+                processed_customer_ids.add(customer.id)
                 analyzed += 1
 
-                # Commit every 50 records to avoid long transactions
-                if analyzed % 50 == 0:
-                    try:
-                        db.commit()
-                        print(f"  Analyzed {analyzed}/{total_customers} customers...")
-                    except Exception as commit_error:
-                        print(f"  Commit error at {analyzed}: {str(commit_error)}")
-                        db.rollback()
-                        errors.append(f"Commit error at customer {analyzed}: {str(commit_error)}")
+                # Progress indicator
+                if analyzed % 100 == 0:
+                    print(f"  Processed {analyzed}/{total_customers} customers...")
 
             except Exception as e:
                 error_msg = f"Error analyzing customer {customer.id}: {str(e)}"
-                print(f"  {error_msg}")
                 errors.append(error_msg)
-                # Rollback the failed customer and continue
-                db.rollback()
                 continue
 
-        # Final commit
+        # Bulk commit all changes in batches
+        print(f"\nPreparing to commit:")
+        print(f"  Total processed: {analyzed}")
+        print(f"  Analyses to add: {len(analyses_to_add)}")
+        print(f"  Analyses to update: {len(analyses_to_update)}")
+        print(f"  Errors so far: {len(errors)}")
+
         try:
-            db.commit()
+            # First, bulk update existing analyses in batches
+            if analyses_to_update:
+                print(f"  Bulk updating {len(analyses_to_update)} existing analyses in batches...")
+                batch_size = 500
+                total_batches = (len(analyses_to_update) + batch_size - 1) // batch_size
+                for i in range(0, len(analyses_to_update), batch_size):
+                    batch = analyses_to_update[i:i + batch_size]
+                    db.bulk_update_mappings(BehaviorAnalysis, batch)
+                    db.commit()
+                    print(f"    Updated and committed batch {i//batch_size + 1}/{total_batches} ({len(batch)} analyses)")
+                print(f"  All {len(analyses_to_update)} analyses updated...")
+
+            # Then, bulk insert new analyses in batches
+            if analyses_to_add:
+                print(f"  Bulk inserting {len(analyses_to_add)} new analyses in batches...")
+                batch_size = 500
+                total_batches = (len(analyses_to_add) + batch_size - 1) // batch_size
+                for i in range(0, len(analyses_to_add), batch_size):
+                    batch = analyses_to_add[i:i + batch_size]
+                    db.bulk_save_objects(batch)
+                    db.commit()
+                    print(f"    Inserted and committed batch {i//batch_size + 1}/{total_batches} ({len(batch)} analyses)")
+                print(f"  All {len(analyses_to_add)} analyses added...")
+
             print(f"Completed: {analyzed}/{total_customers} customers analyzed")
-        except Exception as final_commit_error:
-            print(f"Final commit error: {str(final_commit_error)}")
+
+        except Exception as commit_error:
+            print(f"Bulk commit failed: {str(commit_error)}")
+            print(f"  Analyses to add: {len(analyses_to_add)}")
+            print(f"  Analyses to update: {len(analyses_to_update)}")
             db.rollback()
-            errors.append(f"Final commit error: {str(final_commit_error)}")
+
+            # Try inserting analyses one by one to identify problematic records
+            print("Attempting individual analysis insertion...")
+            successful_inserts = 0
+            failed_inserts = 0
+
+            try:
+                # Re-apply updates one by one
+                for analysis_data in analyses_to_update:
+                    try:
+                        db.query(BehaviorAnalysis).filter(
+                            BehaviorAnalysis.id == analysis_data['id']
+                        ).update(analysis_data)
+                        db.commit()
+                        successful_inserts += 1
+                    except Exception as e:
+                        db.rollback()
+                        failed_inserts += 1
+                        errors.append(f"Failed to update analysis {analysis_data['id']}: {str(e)}")
+
+                # Insert new analyses one by one
+                for analysis in analyses_to_add:
+                    try:
+                        db.add(analysis)
+                        db.commit()
+                        successful_inserts += 1
+                    except Exception as e:
+                        db.rollback()
+                        failed_inserts += 1
+                        errors.append(f"Failed to add analysis for customer {analysis.customer_id}: {str(e)}")
+
+                print(f"Individual insertion complete: {successful_inserts} successful, {failed_inserts} failed")
+
+                if successful_inserts > 0:
+                    return {
+                        'success': True,
+                        'total_customers': total_customers,
+                        'analyzed': successful_inserts,
+                        'new_analyses': len([a for a in analyses_to_add]),
+                        'updated_analyses': len([a for a in analyses_to_update]),
+                        'errors': errors if errors else None
+                    }
+            except Exception as retry_error:
+                print(f"Individual insertion also failed: {str(retry_error)}")
+                errors.append(f"Retry error: {str(retry_error)}")
+
+            return {
+                'success': False,
+                'total_customers': total_customers,
+                'analyzed': 0,
+                'new_analyses': 0,
+                'updated_analyses': 0,
+                'errors': errors
+            }
 
         return {
             'success': True,
             'total_customers': total_customers,
             'analyzed': analyzed,
+            'new_analyses': len(analyses_to_add),
+            'updated_analyses': len(analyses_to_update),
             'errors': errors if errors else None
         }
 
     except Exception as e:
         db.rollback()
-        raise Exception(f"Error in batch behavior analysis: {str(e)}")
+        print(f"Fatal error in batch behavior analysis: {str(e)}")
+        return {
+            'success': False,
+            'total_customers': 0,
+            'analyzed': 0,
+            'new_analyses': 0,
+            'updated_analyses': 0,
+            'errors': [f"Fatal error: {str(e)}"]
+        }
