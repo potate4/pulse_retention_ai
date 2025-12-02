@@ -32,6 +32,21 @@ from app.services.ml_training import (
     FEATURE_COLUMNS
 )
 
+# V2 Enhanced services for better accuracy (AUTO-ENABLED)
+from app.services.feature_engineering_v2 import (
+    engineer_features_from_csv_v2,
+    get_feature_columns_v2
+)
+from app.services.ml_training_v2 import (
+    train_churn_model_v2,
+    save_model_v2,
+    load_model_v2,
+    predict_v2
+)
+
+# USE V2 BY DEFAULT
+USE_V2_ENHANCED = True  # Set to False to use original methods
+
 router = APIRouter()
 
 
@@ -155,9 +170,12 @@ async def process_features_background(
         csv_bytes = download_from_supabase(dataset.bucket_name, dataset.file_path)
         df = pd.read_csv(io.BytesIO(csv_bytes))
 
-        # Engineer features
+        # Engineer features (V2 enhanced or original)
         has_churn = dataset.has_churn_label == "True"
-        features_df = engineer_features_from_csv(df, has_churn_label=has_churn)
+        if USE_V2_ENHANCED:
+            features_df = engineer_features_from_csv_v2(df, has_churn_label=has_churn)
+        else:
+            features_df = engineer_features_from_csv(df, has_churn_label=has_churn)
 
         # Convert to CSV bytes
         features_csv = features_df.to_csv(index=False).encode('utf-8')
@@ -311,14 +329,26 @@ async def train_model_background(
         else:
             training_df = features_df
 
-        # Train model
-        model, metrics = train_churn_model_from_dataframe(
-            training_df=training_df,
-            model_type=model_type
-        )
-
-        # Save model
-        model_path = save_model_to_disk(model, str(org_id), metrics)
+        # Train model (V2 enhanced or original)
+        if USE_V2_ENHANCED:
+            # V2: Use enhanced features and auto model selection
+            feature_cols = get_feature_columns_v2()
+            pipeline, metrics = train_churn_model_v2(
+                training_df=training_df,
+                feature_columns=feature_cols,
+                model_type="auto",  # Auto-select best model
+                enable_tuning=True,  # Enable hyperparameter tuning
+                enable_scaling=True  # Enable feature scaling
+            )
+            # Save V2 model
+            model_path = save_model_v2(pipeline, str(org_id), metrics)
+        else:
+            # Original method
+            model, metrics = train_churn_model_from_dataframe(
+                training_df=training_df,
+                model_type=model_type
+            )
+            model_path = save_model_to_disk(model, str(org_id), metrics)
 
         # Update metadata
         model_metadata.model_path = model_path
@@ -456,9 +486,6 @@ async def predict_churn(
     org = get_organization(org_id, db)
 
     try:
-        # Load model
-        model = load_model_from_disk(str(org_id))
-
         # Convert input to DataFrame
         customer_id = customer_data.get("customer_id")
         transactions = customer_data.get("transactions", [])
@@ -473,11 +500,15 @@ async def predict_churn(
         trans_df = pd.DataFrame(transactions)
         trans_df["customer_id"] = customer_id
 
-        # Engineer features
-        features_df = engineer_features_from_csv(trans_df, has_churn_label=False)
-
-        # Predict
-        predictions = predict_from_features(model, features_df)
+        # Load model and predict (V2 or original)
+        if USE_V2_ENHANCED:
+            pipeline = load_model_v2(str(org_id))
+            features_df = engineer_features_from_csv_v2(trans_df, has_churn_label=False)
+            predictions = predict_v2(pipeline, features_df)
+        else:
+            model = load_model_from_disk(str(org_id))
+            features_df = engineer_features_from_csv(trans_df, has_churn_label=False)
+            predictions = predict_from_features(model, features_df)
 
         return predictions.to_dict(orient="records")[0]
 
@@ -514,19 +545,33 @@ async def process_bulk_predictions_background(
         # Read CSV
         df = pd.read_csv(io.BytesIO(csv_content))
 
-        # Load model
-        model = load_model_from_disk(str(org_id))
-
-        # Engineer features from CSV
-        features_df = engineer_features_from_csv(df, has_churn_label=False)
-
-        # Predict
-        predictions_df = predict_from_features(model, features_df)
+        # Load model and predict (V2 or original)
+        if USE_V2_ENHANCED:
+            pipeline = load_model_v2(str(org_id))
+            features_df = engineer_features_from_csv_v2(df, has_churn_label=False)
+            predictions_df = predict_v2(pipeline, features_df)
+            feature_cols = get_feature_columns_v2()
+        else:
+            model = load_model_from_disk(str(org_id))
+            features_df = engineer_features_from_csv(df, has_churn_label=False)
+            predictions_df = predict_from_features(model, features_df)
+            feature_cols = FEATURE_COLUMNS
 
         # Store predictions in database
         risk_distribution = {"Low": 0, "Medium": 0, "High": 0, "Critical": 0}
 
         for _, row in predictions_df.iterrows():
+            # Get features for this customer
+            customer_features_df = features_df[features_df["customer_id"] == row["customer_id"]]
+            if len(customer_features_df) > 0:
+                feature_dict = {
+                    col: float(customer_features_df[col].values[0])
+                    for col in feature_cols
+                    if col in customer_features_df.columns
+                }
+            else:
+                feature_dict = None
+
             # Store individual prediction
             customer_pred = CustomerPrediction(
                 id=uuid.uuid4(),
@@ -535,10 +580,7 @@ async def process_bulk_predictions_background(
                 external_customer_id=str(row["customer_id"]),
                 churn_probability=str(row["churn_probability"]),
                 risk_segment=row["risk_segment"],
-                features={
-                    col: float(features_df[features_df["customer_id"] == row["customer_id"]][col].values[0])
-                    for col in FEATURE_COLUMNS
-                } if len(features_df[features_df["customer_id"] == row["customer_id"]]) > 0 else None
+                features=feature_dict
             )
             db_session.add(customer_pred)
 
