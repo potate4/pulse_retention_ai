@@ -232,6 +232,7 @@ def engineer_features_from_csv_v2(
     features_df = pd.DataFrame(features_list)
 
     # Normalize monetary scores (0-100 scale, using quantile to handle outliers)
+    # Keep monetary_value for ROI calculations
     if len(features_df) > 0:
         max_monetary = features_df["_monetary_value"].quantile(0.95)
         if max_monetary == 0:
@@ -239,6 +240,8 @@ def engineer_features_from_csv_v2(
         features_df["monetary_score"] = features_df["_monetary_value"].apply(
             lambda x: round(min(100, 100 * (x / max_monetary)), 2)
         )
+        # Rename _monetary_value to monetary_value for ROI calculations
+        features_df["monetary_value"] = features_df["_monetary_value"]
         features_df = features_df.drop(columns=["_monetary_value"])
 
     return features_df
