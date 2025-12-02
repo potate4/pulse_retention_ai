@@ -5,6 +5,8 @@ Handles HTTP requests for email campaign operations.
 from fastapi import APIRouter, HTTPException, Depends, status
 from typing import List
 
+from app.api.deps import get_current_active_user
+from app.db.models.user import User
 from app.schemas.email import (
     EmailGenerateRequest,
     EmailGenerateResponse,
@@ -19,15 +21,9 @@ from app.services.segmentation_service import SegmentationService
 router = APIRouter()
 
 
-# TODO: Replace with actual auth dependency when ready
-async def get_current_org_id():
-    """Mock organization ID - replace with actual auth"""
-    return 1
-
-
 @router.get("/segments", response_model=List[SegmentResponse])
 async def get_segments(
-    org_id: int = Depends(get_current_org_id)
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Get all customer segments for the organization.
@@ -36,6 +32,7 @@ async def get_segments(
         List of segments with customer counts
     """
     try:
+        org_id = current_user.id  # User ID equals organization ID
         segments = await SegmentationService.get_segments(org_id)
         return segments
     except Exception as e:
@@ -48,7 +45,7 @@ async def get_segments(
 @router.get("/segments/{segment_id}/customers", response_model=List[CustomerResponse])
 async def get_segment_customers(
     segment_id: str,
-    org_id: int = Depends(get_current_org_id)
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Get all customers in a specific segment.
@@ -60,6 +57,7 @@ async def get_segment_customers(
         List of customers in the segment
     """
     try:
+        org_id = current_user.id  # User ID equals organization ID
         customers = await CustomerService.get_customers_by_segment(segment_id, org_id)
         return customers
     except Exception as e:
@@ -71,7 +69,7 @@ async def get_segment_customers(
 
 @router.get("/customers", response_model=List[CustomerResponse])
 async def get_all_customers(
-    org_id: int = Depends(get_current_org_id)
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Get all customers for the organization.
@@ -80,6 +78,7 @@ async def get_all_customers(
         List of all customers
     """
     try:
+        org_id = current_user.id  # User ID equals organization ID
         customers = await CustomerService.get_all_customers(org_id)
         return customers
     except Exception as e:
@@ -92,7 +91,7 @@ async def get_all_customers(
 @router.post("/emails/generate", response_model=EmailGenerateResponse)
 async def generate_email(
     request: EmailGenerateRequest,
-    org_id: int = Depends(get_current_org_id)
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Generate email template preview for customers or segment.
@@ -113,6 +112,7 @@ async def generate_email(
                 detail="Either customer_ids or segment_id must be provided"
             )
         
+        org_id = current_user.id  # User ID equals organization ID
         # Generate email preview
         email = await EmailService.generate_email_preview(
             customer_ids=request.customer_ids,
@@ -138,7 +138,7 @@ async def generate_email(
 @router.post("/emails/send", response_model=EmailSendResponse)
 async def send_emails(
     request: EmailSendRequest,
-    org_id: int = Depends(get_current_org_id)
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Send personalized emails to customers.
@@ -161,6 +161,7 @@ async def send_emails(
                 detail="customer_ids must be provided"
             )
         
+        org_id = current_user.id  # User ID equals organization ID
         # Send emails
         result = await EmailService.send_emails(
             subject=request.subject,
@@ -186,7 +187,7 @@ async def send_to_segment(
     subject: str,
     html_body: str,
     text_body: str = None,
-    org_id: int = Depends(get_current_org_id)
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Send emails to all customers in a segment.
@@ -201,6 +202,7 @@ async def send_to_segment(
         Send results with success/failure counts
     """
     try:
+        org_id = current_user.id  # User ID equals organization ID
         result = await EmailService.send_to_segment(
             subject=subject,
             html_body=html_body,

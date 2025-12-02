@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import Layout from '../components/Layout'
 import { getEmailHistory, getEmailStats } from '../api/emailHistory'
 
 /**
@@ -71,11 +72,11 @@ const EmailHistory = () => {
   const totalPages = Math.ceil(totalItems / pageSize)
 
   return (
-    <div className="min-h-screen bg-light-bg dark:bg-dark-bg py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <Layout activePage="history">
+      <div>
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-light-text-primary dark:text-dark-text-primary">
+        <div style={{ marginBottom: '30px' }}>
+          <h1 style={{ margin: '0 0 10px 0', fontSize: '32px', color: '#1e293b' }}>
             Email History
           </h1>
           <p className="mt-2 text-light-text-secondary dark:text-dark-text-secondary">
@@ -352,7 +353,7 @@ const EmailHistory = () => {
           )}
         </div>
       </div>
-    </div>
+    </Layout>
   )
 }
 

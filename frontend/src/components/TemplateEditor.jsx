@@ -163,7 +163,7 @@ const TemplateEditor = ({ initialSubject, initialHtmlBody, customers, onSave, on
               onClick={handleSave}
               className="px-6 py-2 bg-primary-teal text-white rounded-lg hover:bg-primary-slate font-medium"
             >
-              Save Changes
+              Save Changes and send mail
             </button>
             <button
               onClick={onCancel}

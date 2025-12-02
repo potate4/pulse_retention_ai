@@ -265,3 +265,37 @@ def get_feature_columns_v2() -> List[str]:
         "rf_ratio",
         "avg_days_since_last"
     ]
+
+
+def create_training_dataset_from_csv_v2(
+    raw_csv_df: pd.DataFrame,
+    churn_threshold_days: int = 30,
+    current_date: Optional[datetime] = None
+) -> pd.DataFrame:
+    """
+    Create a complete training dataset with V2 features and labels from raw CSV.
+
+    Args:
+        raw_csv_df: Raw customer transactions CSV
+        churn_threshold_days: Threshold for labeling churned customers
+        current_date: Reference date (defaults to today)
+
+    Returns:
+        DataFrame with V2 features and churn labels ready for training
+    """
+    # Import generate_churn_labels from the original module
+    from app.services.feature_engineering_csv import generate_churn_labels
+    
+    # Generate churn labels
+    churn_labels_df = generate_churn_labels(raw_csv_df, churn_threshold_days, current_date)
+
+    # Engineer features using V2
+    features_df = engineer_features_from_csv_v2(raw_csv_df, has_churn_label=False, current_date=current_date)
+
+    # Merge features with labels
+    training_df = features_df.merge(churn_labels_df, on="customer_id", how="left")
+
+    # Fill any missing labels with 0 (active)
+    training_df["churn_label"] = training_df["churn_label"].fillna(0).astype(int)
+
+    return training_df

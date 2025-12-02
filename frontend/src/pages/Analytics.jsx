@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { analyticsAPI } from '../api/analytics'
+import Layout from '../components/Layout'
 
 /**
  * Analytics Page
@@ -71,12 +72,12 @@ const Analytics = () => {
   }, [])
 
   const MetricCard = ({ title, value, subtitle, icon, color }) => (
-    <div className="bg-white rounded-lg shadow p-6 border-l-4" style={{ borderColor: color }}>
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4" style={{ borderColor: color }}>
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-gray-500 text-sm">{title}</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{value}</p>
-          {subtitle && <p className="text-gray-600 text-xs mt-1">{subtitle}</p>}
+          <p className="text-gray-500 dark:text-gray-400 text-sm">{title}</p>
+          <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{value}</p>
+          {subtitle && <p className="text-gray-600 dark:text-gray-300 text-xs mt-1">{subtitle}</p>}
         </div>
         <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${color}20` }}>
           {icon}
@@ -94,8 +95,8 @@ const Analytics = () => {
           {data.map((item, idx) => (
             <div key={idx}>
               <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-700">{item.month || item.range || item.reason}</span>
-                <span className="font-semibold text-gray-900">{item[dataKey]}</span>
+                <span className="text-gray-700 dark:text-gray-300">{item.month || item.range || item.reason}</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{item[dataKey]}</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
@@ -210,10 +211,10 @@ const Analytics = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-          <p className="mt-4 text-gray-600">Loading analytics...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading analytics...</p>
         </div>
       </div>
     )
@@ -221,10 +222,10 @@ const Analytics = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white rounded-lg shadow p-6 max-w-md w-full">
-          <h2 className="text-lg font-semibold text-red-600 mb-2">Error Loading Analytics</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 max-w-md w-full">
+          <h2 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-2">Error Loading Analytics</h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-4">{error}</p>
           <button
             onClick={() => window.location.reload()}
             className="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition"
@@ -237,23 +238,23 @@ const Analytics = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
           <button
-            onClick={() => navigate('/home')}
+            onClick={() => navigate('/dashboard')}
             className="text-indigo-600 hover:text-indigo-700 text-sm font-medium mb-4"
           >
             ← Back to Dashboard
           </button>
-          <h1 className="text-3xl font-bold text-gray-900">Analytics & Insights</h1>
-          <p className="text-gray-600 mt-2">Customer metrics, churn analysis, and retention insights</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Analytics & Insights</h1>
+          <p className="text-gray-600 dark:text-gray-300 mt-2">Customer metrics, churn analysis, and retention insights</p>
         </div>
 
         {/* Key Metrics */}
         {metrics && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '30px' }}>
             <MetricCard
               title="Total Customers"
               value={metrics.totalCustomers.toLocaleString()}
@@ -298,7 +299,7 @@ const Analytics = () => {
         )}
 
         {/* Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px', marginBottom: '30px' }}>
           {/* Churn & Retention Trend */}
           {churnData && (
             <SimpleLineChart
@@ -339,14 +340,14 @@ const Analytics = () => {
         </div>
 
         {/* Data Source Info */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-blue-800">
+        <div style={{ backgroundColor: '#eff6ff', border: '1px solid #93c5fd', borderRadius: '8px', padding: '15px' }}>
+          <p style={{ margin: 0, fontSize: '14px', color: '#1e40af' }}>
             <strong>ℹ️ Real Data:</strong> This page is displaying live data from the backend API. 
             All metrics, trends, and distributions are fetched from the analytics endpoints.
           </p>
         </div>
       </div>
-    </div>
+    </Layout>
   )
 }
 
