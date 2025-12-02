@@ -135,23 +135,26 @@ class EmailService:
                     "timestamp": result.get("timestamp")
                 })
                 
-                # Log to database
-                db = SessionLocal()
+                # Log to database (non-blocking)
                 try:
-                    email_log = EmailLog(
-                        customer_id=customer.id,
-                        recipient_email=customer.email,
-                        subject=personalized_subject,
-                        html_body=personalized_html,
-                        text_body=personalized_text,
-                        segment_id=segment_id,
-                        status="sent",
-                        organization_id=organization_id
-                    )
-                    db.add(email_log)
-                    db.commit()
-                finally:
-                    db.close()
+                    db = SessionLocal()
+                    try:
+                        email_log = EmailLog(
+                            customer_id=customer.id,
+                            recipient_email=customer.email,
+                            subject=personalized_subject,
+                            html_body=personalized_html,
+                            text_body=personalized_text,
+                            segment_id=segment_id,
+                            status="sent",
+                            organization_id=organization_id
+                        )
+                        db.add(email_log)
+                        db.commit()
+                    finally:
+                        db.close()
+                except Exception as log_error:
+                    logger.warning(f"Failed to log email to database: {str(log_error)}")
                 
             except Exception as e:
                 logger.error(f"Failed to send email to {customer.email}: {str(e)}")
@@ -163,23 +166,26 @@ class EmailService:
                     "error": str(e)
                 })
                 
-                # Log failure to database
-                db = SessionLocal()
+                # Log failure to database (non-blocking)
                 try:
-                    email_log = EmailLog(
-                        customer_id=customer.id,
-                        recipient_email=customer.email,
-                        subject=personalized_subject,
-                        html_body=personalized_html,
-                        segment_id=segment_id,
-                        status="failed",
-                        error_message=str(e),
-                        organization_id=organization_id
-                    )
-                    db.add(email_log)
-                    db.commit()
-                finally:
-                    db.close()
+                    db = SessionLocal()
+                    try:
+                        email_log = EmailLog(
+                            customer_id=customer.id,
+                            recipient_email=customer.email,
+                            subject=personalized_subject,
+                            html_body=personalized_html,
+                            segment_id=segment_id,
+                            status="failed",
+                            error_message=str(e),
+                            organization_id=organization_id
+                        )
+                        db.add(email_log)
+                        db.commit()
+                    finally:
+                        db.close()
+                except Exception as log_error:
+                    logger.warning(f"Failed to log email error to database: {str(log_error)}")
         
         return EmailSendResponse(
             success=sent_count > 0,
