@@ -53,10 +53,10 @@ const ROIDashboard = () => {
 
   const MetricCard = ({ title, value, subtitle, icon, color, trend }) => (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4" style={{ borderColor: color }}>
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
           <p className="text-gray-500 dark:text-gray-400 text-sm">{title}</p>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{value}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1 break-words">{value}</p>
           {subtitle && <p className="text-gray-600 dark:text-gray-300 text-xs mt-1">{subtitle}</p>}
           {trend && (
             <p className={`text-xs mt-1 ${trend > 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -64,7 +64,7 @@ const ROIDashboard = () => {
             </p>
           )}
         </div>
-        <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${color}20` }}>
+        <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${color}20` }}>
           {icon}
         </div>
       </div>
@@ -76,16 +76,16 @@ const ROIDashboard = () => {
     const maxValue = Math.max(...data.map(d => d[dataKey]))
     
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{title}</h3>
         <div className="space-y-4">
           {data.map((item, idx) => (
             <div key={idx}>
               <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-700">{item.period}</span>
-                <span className="font-semibold text-gray-900">{item[dataKey]}</span>
+                <span className="text-gray-700 dark:text-gray-300">{item.period}</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{item[dataKey]}</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div
                   className="h-2 rounded-full transition-all"
                   style={{
@@ -106,16 +106,16 @@ const ROIDashboard = () => {
     const maxValue = Math.max(...data.map(d => d[dataKey]))
     
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{title}</h3>
         <div className="space-y-4">
           {data.map((item, idx) => (
             <div key={idx}>
               <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-700">{item.name || item.campaign || item.label}</span>
-                <span className="font-semibold text-gray-900">৳{item[dataKey]?.toLocaleString()}</span>
+                <span className="text-gray-700 dark:text-gray-300">{item.name || item.campaign || item.label}</span>
+                <span className="font-semibold text-gray-900 dark:text-white">৳{item[dataKey]?.toLocaleString()}</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div
                   className="h-2 rounded-full transition-all"
                   style={{
@@ -137,8 +137,8 @@ const ROIDashboard = () => {
     let currentAngle = 0
 
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{title}</h3>
         <div className="flex items-center gap-8">
           <svg width="150" height="150" viewBox="0 0 150 150" className="flex-shrink-0">
             {data.map((item, idx) => {
@@ -173,10 +173,10 @@ const ROIDashboard = () => {
             {data.map((item, idx) => (
               <div key={idx} className="flex items-center gap-2">
                 <div
-                  className="w-3 h-3 rounded-full"
+                  className="w-3 h-3 rounded-full flex-shrink-0"
                   style={{ backgroundColor: item.color }}
                 ></div>
-                <span className="text-sm text-gray-700">{item.name}: ৳{item.value?.toLocaleString()}</span>
+                <span className="text-sm text-gray-700 dark:text-gray-300">{item.name}: ৳{item.value?.toLocaleString()}</span>
               </div>
             ))}
           </div>
@@ -187,88 +187,85 @@ const ROIDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading ROI data...</p>
+      <Layout activePage="roi">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+            <p className="mt-4 text-gray-600 dark:text-gray-300">Loading ROI data...</p>
+          </div>
         </div>
-      </div>
+      </Layout>
     )
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 max-w-md w-full">
-          <h2 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-2">Error Loading ROI Data</h2>
-          <p className="text-gray-600 dark:text-gray-300 mb-4">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition"
-          >
-            Retry
-          </button>
+      <Layout activePage="roi">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 max-w-md w-full">
+            <h2 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-2">Error Loading ROI Data</h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition"
+            >
+              Retry
+            </button>
+          </div>
         </div>
-      </div>
+      </Layout>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="text-green-600 hover:text-green-700 text-sm font-medium mb-4"
-          >
-            ← Back to Dashboard
-          </button>
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">ROI Dashboard</h1>
-              <p className="text-gray-600 dark:text-gray-300 mt-2">Business profitability and return on investment analysis</p>
-            </div>
-            
-            {/* Timeframe Selector */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => setTimeframe('monthly')}
-                className={`px-4 py-2 rounded-lg font-medium transition ${
-                  timeframe === 'monthly'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                Monthly
-              </button>
-              <button
-                onClick={() => setTimeframe('quarterly')}
-                className={`px-4 py-2 rounded-lg font-medium transition ${
-                  timeframe === 'quarterly'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                Quarterly
-              </button>
-              <button
-                onClick={() => setTimeframe('yearly')}
-                className={`px-4 py-2 rounded-lg font-medium transition ${
-                  timeframe === 'yearly'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                Yearly
-              </button>
-            </div>
+    <Layout activePage="roi">
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">ROI Dashboard</h1>
+            <p className="text-gray-600 dark:text-gray-300 mt-2">Business profitability and return on investment analysis</p>
+          </div>
+          
+          {/* Timeframe Selector */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setTimeframe('monthly')}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                timeframe === 'monthly'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setTimeframe('quarterly')}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                timeframe === 'quarterly'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+            >
+              Quarterly
+            </button>
+            <button
+              onClick={() => setTimeframe('yearly')}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                timeframe === 'yearly'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+            >
+              Yearly
+            </button>
           </div>
         </div>
+      </div>
 
-        {/* Key Metrics */}
-        {metrics && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      {/* Key Metrics */}
+      {metrics && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <MetricCard
               title="Total Revenue"
               value={`৳${metrics.totalRevenue?.toLocaleString()}`}
@@ -347,32 +344,32 @@ const ROIDashboard = () => {
 
         {/* Additional Metrics Table */}
         {metrics && (
-          <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
-            <div className="px-6 py-4 bg-gray-50 border-b">
-              <h3 className="text-lg font-semibold text-gray-900">Financial Summary</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden mb-8">
+            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Financial Summary</h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <tbody>
-                  <tr className="border-b">
-                    <td className="px-6 py-4 text-gray-900 font-medium">Average Customer Lifetime Value</td>
-                    <td className="px-6 py-4 text-gray-600">৳{metrics.avgCustomerLTV?.toLocaleString()}</td>
+                  <tr className="border-b dark:border-gray-700">
+                    <td className="px-6 py-4 text-gray-900 dark:text-white font-medium">Average Customer Lifetime Value</td>
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300">৳{metrics.avgCustomerLTV?.toLocaleString()}</td>
                   </tr>
-                  <tr className="border-b">
-                    <td className="px-6 py-4 text-gray-900 font-medium">Cost per Acquisition</td>
-                    <td className="px-6 py-4 text-gray-600">৳{metrics.costPerAcquisition?.toLocaleString()}</td>
+                  <tr className="border-b dark:border-gray-700">
+                    <td className="px-6 py-4 text-gray-900 dark:text-white font-medium">Cost per Acquisition</td>
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300">৳{metrics.costPerAcquisition?.toLocaleString()}</td>
                   </tr>
-                  <tr className="border-b">
-                    <td className="px-6 py-4 text-gray-900 font-medium">Cost per Retention</td>
-                    <td className="px-6 py-4 text-gray-600">৳{metrics.costPerRetention?.toLocaleString()}</td>
+                  <tr className="border-b dark:border-gray-700">
+                    <td className="px-6 py-4 text-gray-900 dark:text-white font-medium">Cost per Retention</td>
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300">৳{metrics.costPerRetention?.toLocaleString()}</td>
                   </tr>
-                  <tr className="border-b">
-                    <td className="px-6 py-4 text-gray-900 font-medium">Payback Period</td>
-                    <td className="px-6 py-4 text-gray-600">{metrics.paybackPeriod} months</td>
+                  <tr className="border-b dark:border-gray-700">
+                    <td className="px-6 py-4 text-gray-900 dark:text-white font-medium">Payback Period</td>
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{metrics.paybackPeriod} months</td>
                   </tr>
                   <tr>
-                    <td className="px-6 py-4 text-gray-900 font-medium">Break Even Date</td>
-                    <td className="px-6 py-4 text-gray-600">{metrics.breakEvenDate}</td>
+                    <td className="px-6 py-4 text-gray-900 dark:text-white font-medium">Break Even Date</td>
+                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{metrics.breakEvenDate}</td>
                   </tr>
                 </tbody>
               </table>
@@ -381,13 +378,12 @@ const ROIDashboard = () => {
         )}
 
         {/* Data Source Info */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-blue-800">
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <p className="text-sm text-blue-800 dark:text-blue-300">
             <strong>ℹ️ Real Data:</strong> This page displays live ROI and financial data from the backend API. 
             All metrics, trends, and cost analysis are fetched from the ROI calculation endpoints.
           </p>
         </div>
-      </div>
     </Layout>
   )
 }

@@ -149,10 +149,10 @@ const EmailCampaign = () => {
     <Layout activePage="email">
       <div>
         {/* Header */}
-        <div style={{ marginBottom: '30px' }}>
-          <h1 style={{ margin: '0 0 10px 0', fontSize: '32px', color: '#1e293b' }}>Email Campaign</h1>
-          <p style={{ margin: '0', color: '#64748b', fontSize: '16px' }}>
-            Create and send personalized emails to your customer segments
+        
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Email Campaign</h1>
+          <p className="text-gray-600 dark:text-gray-300 mt-2">Create and send personalized emails to your customer segments
           </p>
         </div>
 
