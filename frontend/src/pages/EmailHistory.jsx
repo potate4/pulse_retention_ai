@@ -73,16 +73,12 @@ const EmailHistory = () => {
 
   return (
     <Layout activePage="history">
-      <div>
         {/* Header */}
-        <div style={{ marginBottom: '30px' }}>
-          <h1 style={{ margin: '0 0 10px 0', fontSize: '32px', color: '#1e293b' }}>
-            Email History
-          </h1>
-          <p className="mt-2 text-light-text-secondary dark:text-dark-text-secondary">
-            Track all emails sent through the platform
-          </p>
+        <div className="mb-8"><div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Email History</h1>
+          <p className="text-gray-600 dark:text-gray-300 mt-2">Track all emails sent through the platform</p>
         </div>
+        
 
         {/* Statistics Section */}
         <div className="mb-8">
