@@ -3,7 +3,10 @@
     "allow": [
       "Bash(python -m app.helpers.normalize_telco_dataset:*)",
       "Bash(python -m app.helpers.normalize_ecomm_dataset:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(dir \"d:\\pulse_retention_ai\\backend\" /s /b *.py)",
+      "Bash(findstr:*)",
+      "Bash(awk:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,53 +1,37 @@
 {
-  "accuracy": 0.4876,
-  "precision": 0.4872,
-  "recall": 0.4858,
-  "specificity": 0.4894,
-  "f1_score": 0.4865,
-  "roc_auc": 0.4684,
+  "accuracy": 0.7935,
+  "precision": 0.6602,
+  "recall": 0.4572,
+  "specificity": 0.915,
+  "f1_score": 0.5403,
+  "roc_auc": 0.8259,
   "confusion_matrix": {
-    "true_negatives": 345,
-    "false_positives": 360,
-    "false_negatives": 362,
-    "true_positives": 342
+    "true_negatives": 947,
+    "false_positives": 88,
+    "false_negatives": 203,
+    "true_positives": 171
   },
-  "feature_importance": {
-    "recency_score": 0.0068,
-    "frequency_score": 0.0,
-    "monetary_score": 0.108,
-    "tenure_days": 0.0,
-    "avg_transaction_value": 0.7961,
-    "activity_trend": 0.0,
-    "transaction_velocity": 0.0,
-    "days_between_transactions": 0.0,
-    "consistency_score": 0.0,
-    "activity_ratio": 0.0,
-    "monetary_trend": 0.0,
-    "lifecycle_stage": 0.0,
-    "engagement_score": 0.0044,
-    "rf_ratio": 0.0004,
-    "avg_days_since_last": 0.0843
-  },
-  "model_type": "random_forest",
+  "feature_importance": {},
+  "model_type": "gradient_boosting",
   "train_samples": 5634,
   "test_samples": 1409,
   "total_samples": 7043,
-  "churn_rate": 0.4999,
+  "churn_rate": 0.2654,
   "class_balance": {
-    "non_churned": 3522,
-    "churned": 3521
+    "non_churned": 5174,
+    "churned": 1869
   },
   "feature_scaling": true,
   "hyperparameter_tuning": true,
   "cv_scores": {
-    "mean": 0.511,
-    "std": 0.0132,
+    "mean": 0.8175,
+    "std": 0.0178,
     "scores": [
-      0.5245,
-      0.498,
-      0.4925,
-      0.5164,
-      0.5232
+      0.7981,
+      0.8455,
+      0.8189,
+      0.8263,
+      0.7988
     ]
   }
 }

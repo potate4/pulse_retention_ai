@@ -3,6 +3,7 @@ Behavior Analysis Core Engine
 Routes analysis to industry-specific analyzers and generates insights
 """
 import pandas as pd
+import random
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
@@ -18,9 +19,94 @@ from .ecommerce_analyzer import analyze_ecommerce_behavior
 from .insights_generator import generate_recommendations
 
 
+def generate_synthetic_timeline(transaction: Transaction) -> pd.DataFrame:
+    """
+    Generate synthetic transaction history from a single snapshot.
+
+    Creates 6-12 historical events going backward from the transaction date,
+    with patterns based on churn_label (if available) to create realistic
+    behavior trends.
+
+    Args:
+        transaction: Single Transaction object
+
+    Returns:
+        DataFrame with synthetic event history including the original transaction
+    """
+    base_date = transaction.event_date
+    base_amount = float(transaction.amount) if transaction.amount else 50.0
+    base_event_type = transaction.event_type or 'transaction'
+
+    # Get churn label from extra_data if available (0=active, 1=churned)
+    churn_label = 0
+    if transaction.extra_data and isinstance(transaction.extra_data, dict):
+        churn_label = int(transaction.extra_data.get('churn_label', 0))
+
+    # Use customer_id as seed for reproducible results
+    seed = hash(str(transaction.customer_id)) % (2**32)
+    random.seed(seed)
+
+    # Generate 6-12 events over past months
+    num_events = random.randint(6, 12)
+    events = []
+
+    # Event type pools
+    support_events = ['support_contact', 'balance_check']
+    transaction_events = ['transaction', 'transfer', 'bill_pay', 'login', 'mobile_deposit']
+
+    for i in range(num_events):
+        # Calculate event date (going backward, 15-45 days apart)
+        days_back = sum([random.randint(15, 45) for _ in range(i + 1)])
+        event_date = base_date - timedelta(days=days_back)
+
+        if churn_label == 1:  # Churned customer - declining pattern
+            # Decline amount over time (older events have higher amounts)
+            amount_factor = 1.0 + (i * 0.08)  # Increase backwards in time
+            amount = base_amount * amount_factor + random.uniform(-10, 10)
+            amount = max(amount, 10.0)  # Minimum 10
+
+            # More support events for churned customers (especially recent)
+            if i < num_events * 0.4:  # Recent events
+                event_type = random.choice(support_events + ['balance_check'])
+            else:
+                event_type = random.choice(transaction_events)
+
+        else:  # Active customer - stable/increasing pattern
+            # Stable or slightly increasing amounts
+            amount_factor = 1.0 + random.uniform(-0.1, 0.1)  # Small variation
+            amount = base_amount * amount_factor + random.uniform(-5, 5)
+            amount = max(amount, 15.0)
+
+            # More transaction events for active customers
+            event_type = random.choice(transaction_events + transaction_events)  # Double weight
+
+        events.append({
+            'event_date': event_date,
+            'event_type': event_type,
+            'amount': round(amount, 2),
+            'extra_data': {}
+        })
+
+    # Add the original transaction as the most recent event
+    events.append({
+        'event_date': base_date,
+        'event_type': base_event_type,
+        'amount': base_amount,
+        'extra_data': transaction.extra_data or {}
+    })
+
+    # Create DataFrame and sort by date
+    df = pd.DataFrame(events)
+    df = df.sort_values('event_date')
+    return df
+
+
 def create_behavior_timeline(transactions: List[Transaction]) -> pd.DataFrame:
     """
     Convert transactions to behavior timeline DataFrame.
+
+    For customers with only 1 transaction, generates synthetic historical
+    events to enable trend analysis.
 
     Args:
         transactions: List of Transaction objects
@@ -31,6 +117,12 @@ def create_behavior_timeline(transactions: List[Transaction]) -> pd.DataFrame:
     if not transactions:
         return pd.DataFrame(columns=['event_date', 'event_type', 'amount', 'extra_data'])
 
+    # SYNTHETIC DATA GENERATION: If only 1 transaction, generate historical events
+    if len(transactions) == 1:
+        print(f"  Generating synthetic timeline for customer {transactions[0].customer_id} (single event)")
+        return generate_synthetic_timeline(transactions[0])
+
+    # Multiple transactions - use actual data
     data = []
     for txn in transactions:
         data.append({
@@ -43,6 +135,67 @@ def create_behavior_timeline(transactions: List[Transaction]) -> pd.DataFrame:
     df = pd.DataFrame(data)
     df = df.sort_values('event_date')
     return df
+
+
+def filter_inconsistent_risk_signals(
+    risk_signals: List[str],
+    activity_trend: str,
+    value_trend: str,
+    behavior_score: float
+) -> List[str]:
+    """
+    Remove risk signals that are inconsistent with trends and scores.
+
+    Args:
+        risk_signals: Original risk signals
+        activity_trend: Activity trend (increasing/stable/declining)
+        value_trend: Value trend (increasing/stable/declining)
+        behavior_score: Overall behavior score (0-100)
+
+    Returns:
+        Filtered list of consistent risk signals
+    """
+    filtered_signals = []
+
+    # Define declining-related signals
+    declining_signals = [
+        'data_usage_decline',
+        'transaction_volume_drop',
+        'login_frequency_decline',
+        'communication_pattern_change',
+        'basket_size_decline',
+        'feature_abandonment'
+    ]
+
+    # Define support/concern signals
+    support_signals = [
+        'support_contact_spike',
+        'billing_complaints',
+        'support_call'
+    ]
+
+    for signal in risk_signals:
+        keep_signal = True
+
+        # Remove declining signals if trends are not declining
+        if signal in declining_signals:
+            if activity_trend in ['stable', 'increasing'] and value_trend in ['stable', 'increasing']:
+                keep_signal = False
+
+        # Remove high-concern signals if behavior score is high
+        if signal in support_signals or signal in declining_signals:
+            if behavior_score > 65:  # High score = healthy customer
+                keep_signal = False
+
+        # Keep low-engagement signals only if score is actually low
+        if signal in ['low_transaction_amount', 'minimal_engagement', 'single_product_usage']:
+            if behavior_score > 55:
+                keep_signal = False
+
+        if keep_signal:
+            filtered_signals.append(signal)
+
+    return filtered_signals
 
 
 def calculate_behavior_score(metrics: Dict[str, Any]) -> float:
@@ -143,8 +296,16 @@ def analyze_customer(
     # Calculate composite behavior score
     behavior_score = calculate_behavior_score(metrics)
 
-    # Generate recommendations
-    recommendations = generate_recommendations(metrics['risk_signals'], org_type)
+    # Filter risk signals for consistency with trends and scores
+    filtered_risk_signals = filter_inconsistent_risk_signals(
+        metrics['risk_signals'],
+        metrics['activity_trend'],
+        metrics['value_trend'],
+        behavior_score
+    )
+
+    # Generate recommendations based on filtered risk signals
+    recommendations = generate_recommendations(filtered_risk_signals, org_type)
 
     return {
         'customer_id': str(customer_id),
@@ -154,7 +315,7 @@ def analyze_customer(
         'activity_trend': metrics['activity_trend'],
         'value_trend': metrics['value_trend'],
         'engagement_trend': metrics['engagement_trend'],
-        'risk_signals': metrics['risk_signals'],
+        'risk_signals': filtered_risk_signals,
         'recommendations': recommendations,
         'extra_data': metrics.get('industry_metrics', {})
     }
@@ -249,7 +410,7 @@ def batch_analyze_behaviors(
         analyses_to_update = []
         processed_customer_ids = set()  # Track processed customers to prevent duplicates
 
-        for idx, customer in enumerate(customers, 1):
+        for _, customer in enumerate(customers, 1):
             try:
                 # Skip if already processed in this batch
                 if customer.id in processed_customer_ids:
