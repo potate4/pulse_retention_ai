@@ -21,7 +21,7 @@ def analyze_ecommerce_behavior(timeline: pd.DataFrame) -> Dict[str, Any]:
     - Return rate increase
 
     Args:
-        timeline: DataFrame with event_date, event_type, amount, metadata
+        timeline: DataFrame with event_date, event_type, amount, extra_data
 
     Returns:
         Dictionary with trends, risk signals, and industry metrics
@@ -66,7 +66,7 @@ def analyze_ecommerce_behavior(timeline: pd.DataFrame) -> Dict[str, Any]:
                 risk_signals.append('high_cart_abandonment')
 
     # 2. Category Shift Analysis
-    purchases_with_category = purchases[purchases['metadata'].apply(
+    purchases_with_category = purchases[purchases['extra_data'].apply(
         lambda x: 'category' in x if isinstance(x, dict) else False
     )]
 
@@ -81,13 +81,13 @@ def analyze_ecommerce_behavior(timeline: pd.DataFrame) -> Dict[str, Any]:
         if len(recent_purchases) > 0 and len(prev_purchases) > 0:
             recent_categories = set([
                 meta['category']
-                for meta in recent_purchases['metadata']
+                for meta in recent_purchases['extra_data']
                 if isinstance(meta, dict) and 'category' in meta
             ])
 
             prev_categories = set([
                 meta['category']
-                for meta in prev_purchases['metadata']
+                for meta in prev_purchases['extra_data']
                 if isinstance(meta, dict) and 'category' in meta
             ])
 
@@ -99,7 +99,7 @@ def analyze_ecommerce_behavior(timeline: pd.DataFrame) -> Dict[str, Any]:
                 risk_signals.append('category_shift')
 
     # 3. Discount Dependency Analysis
-    purchases_with_discount = purchases[purchases['metadata'].apply(
+    purchases_with_discount = purchases[purchases['extra_data'].apply(
         lambda x: x.get('discount_used', False) if isinstance(x, dict) else False
     )]
 
@@ -132,14 +132,14 @@ def analyze_ecommerce_behavior(timeline: pd.DataFrame) -> Dict[str, Any]:
                     risk_signals.append('basket_size_decline')
 
         # Items per order
-        purchases_with_items = purchases[purchases['metadata'].apply(
+        purchases_with_items = purchases[purchases['extra_data'].apply(
             lambda x: 'items_count' in x if isinstance(x, dict) else False
         )]
 
         if len(purchases_with_items) > 0:
             avg_items = np.mean([
                 meta.get('items_count', 1)
-                for meta in purchases_with_items['metadata']
+                for meta in purchases_with_items['extra_data']
                 if isinstance(meta, dict)
             ])
             industry_metrics['avg_items_per_order'] = round(avg_items, 2)

@@ -717,13 +717,27 @@ def batch_segment_customers_from_db(
                 continue
 
         # STEP 6: Batch insert/update segments
-        if segments_to_add:
-            db.bulk_save_objects(segments_to_add)
-            print(f"  Adding {len(segments_to_add)} new segments...")
+        try:
+            if segments_to_add:
+                db.bulk_save_objects(segments_to_add)
+                print(f"  Adding {len(segments_to_add)} new segments...")
 
-        # Commit all changes in ONE transaction
-        db.commit()
-        print(f"Completed: {segmented}/{total_customers} customers segmented")
+            # Commit all changes in ONE transaction
+            db.commit()
+            print(f"Completed: {segmented}/{total_customers} customers segmented")
+        except Exception as commit_error:
+            print(f"Commit error: {str(commit_error)}")
+            db.rollback()
+            errors.append(f"Database commit error: {str(commit_error)}")
+
+            return {
+                'success': False,
+                'total_customers': total_customers,
+                'segmented': 0,
+                'new_segments': 0,
+                'updated_segments': 0,
+                'errors': errors
+            }
 
         return {
             'success': True,
@@ -735,5 +749,13 @@ def batch_segment_customers_from_db(
         }
 
     except Exception as e:
+        print(f"Fatal error in batch segmentation: {str(e)}")
         db.rollback()
-        raise Exception(f"Error in batch segmentation from database: {str(e)}")
+        return {
+            'success': False,
+            'total_customers': 0,
+            'segmented': 0,
+            'new_segments': 0,
+            'updated_segments': 0,
+            'errors': [f"Fatal error: {str(e)}"]
+        }

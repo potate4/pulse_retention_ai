@@ -21,7 +21,7 @@ def analyze_telecom_behavior(timeline: pd.DataFrame) -> Dict[str, Any]:
     - Payment delays
 
     Args:
-        timeline: DataFrame with event_date, event_type, amount, metadata
+        timeline: DataFrame with event_date, event_type, amount, extra_data
 
     Returns:
         Dictionary with trends, risk signals, and industry metrics
@@ -81,16 +81,16 @@ def analyze_telecom_behavior(timeline: pd.DataFrame) -> Dict[str, Any]:
             risk_signals.append('communication_pattern_change')
 
     # 3. Plan Utilization Analysis
-    plan_data = timeline[timeline['metadata'].apply(
+    plan_data = timeline[timeline['extra_data'].apply(
         lambda x: 'plan_limit' in x and 'usage' in x if isinstance(x, dict) else False
     )]
 
     if len(plan_data) > 0:
         # Get most recent plan data
         recent_plan = plan_data.iloc[-1]
-        if isinstance(recent_plan['metadata'], dict):
-            plan_limit = recent_plan['metadata'].get('plan_limit', 0)
-            usage = recent_plan['metadata'].get('usage', 0)
+        if isinstance(recent_plan['extra_data'], dict):
+            plan_limit = recent_plan['extra_data'].get('plan_limit', 0)
+            usage = recent_plan['extra_data'].get('usage', 0)
 
             if plan_limit > 0:
                 utilization = (usage / plan_limit) * 100
@@ -112,7 +112,7 @@ def analyze_telecom_behavior(timeline: pd.DataFrame) -> Dict[str, Any]:
         industry_metrics['support_calls_last_30_days'] = support_last_30
 
         # Check for billing inquiries
-        billing_issues = support_calls[support_calls['metadata'].apply(
+        billing_issues = support_calls[support_calls['extra_data'].apply(
             lambda x: x.get('issue_type') == 'billing' if isinstance(x, dict) else False
         )]
 
@@ -135,14 +135,14 @@ def analyze_telecom_behavior(timeline: pd.DataFrame) -> Dict[str, Any]:
     # 6. Payment Analysis
     payments = timeline[timeline['event_type'] == 'bill_payment']
     if len(payments) > 0:
-        late_payments = payments[payments['metadata'].apply(
+        late_payments = payments[payments['extra_data'].apply(
             lambda x: x.get('late_days', 0) > 0 if isinstance(x, dict) else False
         )]
 
         if len(late_payments) > 0:
             avg_late_days = np.mean([
                 meta.get('late_days', 0)
-                for meta in late_payments['metadata']
+                for meta in late_payments['extra_data']
                 if isinstance(meta, dict)
             ])
 

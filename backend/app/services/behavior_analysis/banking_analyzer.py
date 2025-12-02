@@ -108,12 +108,12 @@ def analyze_banking_behavior(timeline: pd.DataFrame) -> Dict[str, Any]:
             risk_signals.append('balance_checking_without_action')
 
     # 5. Cross-Product Usage
-    unique_products = timeline[timeline['metadata'].apply(
+    unique_products = timeline[timeline['extra_data'].apply(
         lambda x: 'product_type' in x if isinstance(x, dict) else False
     )]
     if len(unique_products) > 0:
         product_types = set()
-        for meta in unique_products['metadata']:
+        for meta in unique_products['extra_data']:
             if isinstance(meta, dict) and 'product_type' in meta:
                 product_types.add(meta['product_type'])
         industry_metrics['products_used'] = len(product_types)

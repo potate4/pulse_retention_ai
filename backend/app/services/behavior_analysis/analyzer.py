@@ -57,13 +57,20 @@ def calculate_behavior_score(metrics: Dict[str, Any]) -> float:
         Score from 0 to 100
     """
     # Extract key metrics
-    activity_trend = metrics.get('activity_trend', 0)
-    value_trend = metrics.get('value_trend', 0)
+    activity_trend_str = metrics.get('activity_trend', 'stable')
+    value_trend_str = metrics.get('value_trend', 'stable')
     engagement_level = metrics.get('engagement_level', 50)
 
-    # Trend scores: positive trend = higher score
-    activity_score = 50 + (activity_trend * 10)  # -5 to 5 trend -> 0 to 100
-    value_score = 50 + (value_trend * 10)
+    # Convert trend strings to numeric scores
+    trend_to_score = {
+        'increasing': 80,
+        'stable': 50,
+        'declining': 20,
+        'unknown': 40
+    }
+
+    activity_score = trend_to_score.get(activity_trend_str, 50)
+    value_score = trend_to_score.get(value_trend_str, 50)
 
     # Combine scores
     behavior_score = (
@@ -186,7 +193,7 @@ def batch_analyze_behaviors(
 
         print(f"Analyzing behavior for {total_customers} customers (org_type: {org_type})...")
 
-        for customer in customers:
+        for idx, customer in enumerate(customers, 1):
             try:
                 # Analyze customer
                 analysis_data = analyze_customer(customer.id, org_type, db)
@@ -206,7 +213,7 @@ def batch_analyze_behaviors(
                     existing_analysis.risk_signals = analysis_data['risk_signals']
                     existing_analysis.recommendations = analysis_data['recommendations']
                     existing_analysis.analyzed_at = datetime.utcnow()
-                    existing_analysis.extra_data = analysis_data['extra_data']
+                    existing_analysis.extra_data = analysis_data.get('extra_data', {})
                 else:
                     # Create new
                     new_analysis = BehaviorAnalysis(
@@ -219,31 +226,44 @@ def batch_analyze_behaviors(
                         engagement_trend=analysis_data['engagement_trend'],
                         risk_signals=analysis_data['risk_signals'],
                         recommendations=analysis_data['recommendations'],
-                        extra_data=analysis_data['extra_data']
+                        extra_data=analysis_data.get('extra_data', {})
                     )
                     db.add(new_analysis)
 
                 analyzed += 1
 
-                # Commit every 100 records
-                if analyzed % 100 == 0:
-                    db.commit()
-                    print(f"  Analyzed {analyzed}/{total_customers} customers...")
+                # Commit every 50 records to avoid long transactions
+                if analyzed % 50 == 0:
+                    try:
+                        db.commit()
+                        print(f"  Analyzed {analyzed}/{total_customers} customers...")
+                    except Exception as commit_error:
+                        print(f"  Commit error at {analyzed}: {str(commit_error)}")
+                        db.rollback()
+                        errors.append(f"Commit error at customer {analyzed}: {str(commit_error)}")
 
             except Exception as e:
-                errors.append(f"Error analyzing customer {customer.id}: {str(e)}")
+                error_msg = f"Error analyzing customer {customer.id}: {str(e)}"
+                print(f"  {error_msg}")
+                errors.append(error_msg)
+                # Rollback the failed customer and continue
+                db.rollback()
                 continue
 
         # Final commit
-        db.commit()
-
-        print(f"Completed: {analyzed}/{total_customers} customers analyzed")
+        try:
+            db.commit()
+            print(f"Completed: {analyzed}/{total_customers} customers analyzed")
+        except Exception as final_commit_error:
+            print(f"Final commit error: {str(final_commit_error)}")
+            db.rollback()
+            errors.append(f"Final commit error: {str(final_commit_error)}")
 
         return {
             'success': True,
             'total_customers': total_customers,
             'analyzed': analyzed,
-            'errors': errors
+            'errors': errors if errors else None
         }
 
     except Exception as e:
