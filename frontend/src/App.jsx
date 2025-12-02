@@ -8,6 +8,7 @@ import Home from './pages/Home'
 import Landing from './pages/Landing'
 import EmailCampaign from './pages/EmailCampaign'
 import EditTemplate from './pages/EditTemplate'
+import Analytics from './pages/Analytics'
 import ProtectedRoute from './components/ProtectedRoute'
 import ThemeToggle from './components/ThemeToggle'
 
@@ -44,6 +45,11 @@ function App() {
         <Route path="/edit-template" element={
           <ProtectedRoute>
             <EditTemplate />
+          </ProtectedRoute>
+        } />
+        <Route path="/analytics" element={
+          <ProtectedRoute>
+            <Analytics />
           </ProtectedRoute>
         } />
         <Route path="/" element={<Landing />} />
