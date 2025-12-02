@@ -1,0 +1,5 @@
+customer_id,event_date,amount,event_type
+CUST-001,2024-01-15,150.50,purchase
+CUST-001,2024-01-20,200.00,purchase
+CUST-002,2024-01-16,75.00,login
+CUST-002,2024-01-25,50.00,purchase

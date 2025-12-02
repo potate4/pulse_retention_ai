@@ -14,6 +14,7 @@ from app.api.deps import get_db
 from app.db.models.organization import Organization
 from app.db.models.dataset import Dataset
 from app.db.models.model_metadata import ModelMetadata
+from app.db.models.prediction_batch import PredictionBatch, CustomerPrediction
 from app.services.storage import (
     upload_to_supabase,
     upload_dataframe_to_supabase,
@@ -27,7 +28,8 @@ from app.services.ml_training import (
     train_churn_model_from_dataframe,
     save_model_to_disk,
     load_model_from_disk,
-    predict_from_features
+    predict_from_features,
+    FEATURE_COLUMNS
 )
 
 router = APIRouter()
@@ -489,3 +491,340 @@ async def predict_churn(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error predicting churn: {str(e)}"
         )
+
+
+async def process_bulk_predictions_background(
+    org_id: uuid.UUID,
+    batch_id: uuid.UUID,
+    csv_content: bytes,
+    db_session: Session
+):
+    """
+    Background task: Process bulk predictions from uploaded CSV.
+    """
+    try:
+        # Get batch
+        batch = db_session.query(PredictionBatch).filter(PredictionBatch.id == batch_id).first()
+        if not batch:
+            return
+
+        batch.status = "processing"
+        db_session.commit()
+
+        # Read CSV
+        df = pd.read_csv(io.BytesIO(csv_content))
+
+        # Load model
+        model = load_model_from_disk(str(org_id))
+
+        # Engineer features from CSV
+        features_df = engineer_features_from_csv(df, has_churn_label=False)
+
+        # Predict
+        predictions_df = predict_from_features(model, features_df)
+
+        # Store predictions in database
+        risk_distribution = {"Low": 0, "Medium": 0, "High": 0, "Critical": 0}
+
+        for _, row in predictions_df.iterrows():
+            # Store individual prediction
+            customer_pred = CustomerPrediction(
+                id=uuid.uuid4(),
+                batch_id=batch_id,
+                organization_id=org_id,
+                external_customer_id=str(row["customer_id"]),
+                churn_probability=str(row["churn_probability"]),
+                risk_segment=row["risk_segment"],
+                features={
+                    col: float(features_df[features_df["customer_id"] == row["customer_id"]][col].values[0])
+                    for col in FEATURE_COLUMNS
+                } if len(features_df[features_df["customer_id"] == row["customer_id"]]) > 0 else None
+            )
+            db_session.add(customer_pred)
+
+            # Update risk distribution
+            risk_distribution[row["risk_segment"]] += 1
+
+        # Upload predictions CSV to Supabase
+        predictions_csv = predictions_df.to_csv(index=False).encode('utf-8')
+        output_result = await upload_dataframe_to_supabase(
+            df_csv_bytes=predictions_csv,
+            bucket_name="utils",
+            folder=f"org_{org_id}/predictions",
+            filename=f"predictions_{batch_id}.csv"
+        )
+
+        # Update batch with results
+        batch.status = "completed"
+        batch.output_file_url = output_result["file_url"]
+        batch.avg_churn_probability = str(predictions_df["churn_probability"].mean())
+        batch.risk_distribution = risk_distribution
+        batch.completed_at = datetime.utcnow()
+        db_session.commit()
+
+    except Exception as e:
+        batch.status = "failed"
+        batch.error_message = str(e)
+        db_session.commit()
+        print(f"Error in bulk predictions: {str(e)}")
+
+
+@router.post("/organizations/{org_id}/predict-bulk")
+async def predict_bulk(
+    org_id: uuid.UUID,
+    file: UploadFile = File(...),
+    batch_name: Optional[str] = None,
+    background_tasks: BackgroundTasks = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Bulk inference: Upload CSV with customer data and get predictions for all customers.
+
+    This endpoint:
+    1. Uploads CSV to Supabase storage
+    2. Engineers features from customer transaction data
+    3. Runs inference on all customers
+    4. Stores predictions in database
+    5. Returns predictions CSV
+
+    Expected CSV format:
+    ```csv
+    customer_id,event_date,amount,event_type
+    CUST-001,2024-01-15,150.50,purchase
+    CUST-001,2024-01-20,200.00,purchase
+    CUST-002,2024-01-16,75.00,login
+    ```
+
+    Returns:
+        - batch_id: ID to track this prediction batch
+        - Status and download URL when ready
+
+    Args:
+        org_id: Organization UUID
+        file: CSV file with customer transaction data
+        batch_name: Optional name for this batch
+        background_tasks: FastAPI background tasks
+        db: Database session
+    """
+    org = get_organization(org_id, db)
+
+    # Validate file type
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File must be a CSV"
+        )
+
+    try:
+        # Read CSV content
+        csv_content = await file.read()
+        df = pd.read_csv(io.BytesIO(csv_content))
+
+        # Validate CSV has required columns
+        if "customer_id" not in df.columns or "event_date" not in df.columns:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="CSV must contain 'customer_id' and 'event_date' columns"
+            )
+
+        # Count unique customers
+        total_customers = df["customer_id"].nunique()
+
+        # Upload input CSV to Supabase
+        file.file.seek(0)
+        upload_result = await upload_to_supabase(
+            file=file,
+            bucket_name="utils",
+            folder=f"org_{org_id}/inference_inputs",
+            custom_filename=None
+        )
+
+        # Create prediction batch record
+        batch = PredictionBatch(
+            id=uuid.uuid4(),
+            organization_id=org_id,
+            batch_name=batch_name or f"Batch {datetime.utcnow().strftime('%Y-%m-%d %H:%M')}",
+            total_customers=total_customers,
+            input_file_url=upload_result["file_url"],
+            status="processing"
+        )
+        db.add(batch)
+        db.commit()
+        db.refresh(batch)
+
+        # Process predictions in background
+        background_tasks.add_task(
+            process_bulk_predictions_background,
+            org_id,
+            batch.id,
+            csv_content,
+            db
+        )
+
+        return {
+            "success": True,
+            "batch_id": str(batch.id),
+            "batch_name": batch.batch_name,
+            "total_customers": total_customers,
+            "status": "processing",
+            "message": "Predictions are being generated in background. Use /prediction-batches/{batch_id} to check status."
+        }
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error processing bulk predictions: {str(e)}"
+        )
+
+
+@router.get("/organizations/{org_id}/prediction-batches/{batch_id}")
+async def get_prediction_batch(
+    org_id: uuid.UUID,
+    batch_id: uuid.UUID,
+    db: Session = Depends(get_db)
+):
+    """
+    Get status and results of a prediction batch.
+
+    Returns:
+        - Batch status
+        - Download URL for predictions CSV
+        - Summary statistics (risk distribution, avg probability)
+        - Individual predictions
+    """
+    org = get_organization(org_id, db)
+
+    batch = db.query(PredictionBatch).filter(
+        PredictionBatch.id == batch_id,
+        PredictionBatch.organization_id == org_id
+    ).first()
+
+    if not batch:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Prediction batch {batch_id} not found"
+        )
+
+    # Get predictions count
+    predictions_count = db.query(CustomerPrediction).filter(
+        CustomerPrediction.batch_id == batch_id
+    ).count()
+
+    response = {
+        "batch_id": str(batch.id),
+        "batch_name": batch.batch_name,
+        "status": batch.status,
+        "total_customers": batch.total_customers,
+        "predictions_generated": predictions_count,
+        "input_file_url": batch.input_file_url,
+        "output_file_url": batch.output_file_url,
+        "avg_churn_probability": batch.avg_churn_probability,
+        "risk_distribution": batch.risk_distribution,
+        "created_at": batch.created_at,
+        "completed_at": batch.completed_at,
+        "error_message": batch.error_message
+    }
+
+    return response
+
+
+@router.get("/organizations/{org_id}/prediction-batches/{batch_id}/predictions")
+async def get_batch_predictions(
+    org_id: uuid.UUID,
+    batch_id: uuid.UUID,
+    limit: int = 100,
+    offset: int = 0,
+    db: Session = Depends(get_db)
+):
+    """
+    Get individual customer predictions from a batch.
+
+    Args:
+        org_id: Organization UUID
+        batch_id: Batch UUID
+        limit: Number of predictions to return (default: 100)
+        offset: Offset for pagination (default: 0)
+
+    Returns:
+        List of predictions with customer_id, probability, risk segment
+    """
+    org = get_organization(org_id, db)
+
+    # Verify batch exists
+    batch = db.query(PredictionBatch).filter(
+        PredictionBatch.id == batch_id,
+        PredictionBatch.organization_id == org_id
+    ).first()
+
+    if not batch:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Prediction batch {batch_id} not found"
+        )
+
+    # Get predictions
+    predictions = db.query(CustomerPrediction).filter(
+        CustomerPrediction.batch_id == batch_id
+    ).limit(limit).offset(offset).all()
+
+    return {
+        "batch_id": str(batch_id),
+        "total": db.query(CustomerPrediction).filter(CustomerPrediction.batch_id == batch_id).count(),
+        "limit": limit,
+        "offset": offset,
+        "predictions": [
+            {
+                "customer_id": pred.external_customer_id,
+                "churn_probability": pred.churn_probability,
+                "risk_segment": pred.risk_segment,
+                "features": pred.features,
+                "predicted_at": pred.predicted_at
+            }
+            for pred in predictions
+        ]
+    }
+
+
+@router.get("/organizations/{org_id}/prediction-batches")
+async def list_prediction_batches(
+    org_id: uuid.UUID,
+    limit: int = 20,
+    offset: int = 0,
+    db: Session = Depends(get_db)
+):
+    """
+    List all prediction batches for an organization.
+
+    Returns:
+        List of batches with summary info
+    """
+    org = get_organization(org_id, db)
+
+    batches = db.query(PredictionBatch).filter(
+        PredictionBatch.organization_id == org_id
+    ).order_by(PredictionBatch.created_at.desc()).limit(limit).offset(offset).all()
+
+    total = db.query(PredictionBatch).filter(
+        PredictionBatch.organization_id == org_id
+    ).count()
+
+    return {
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "batches": [
+            {
+                "batch_id": str(batch.id),
+                "batch_name": batch.batch_name,
+                "status": batch.status,
+                "total_customers": batch.total_customers,
+                "avg_churn_probability": batch.avg_churn_probability,
+                "risk_distribution": batch.risk_distribution,
+                "created_at": batch.created_at,
+                "completed_at": batch.completed_at,
+                "output_file_url": batch.output_file_url
+            }
+            for batch in batches
+        ]
+    }
