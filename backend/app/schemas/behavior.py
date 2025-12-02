@@ -19,7 +19,7 @@ class BehaviorAnalysisResponse(BaseModel):
     risk_signals: List[str]
     recommendations: List[str]
     analyzed_at: Optional[datetime] = None
-    extra_data: Optional[Dict[str, Any]] = None
+    metadata: Optional[Dict[str, Any]] = None  # Changed from extra_data to match model
 
 
 class BatchBehaviorAnalysisResponse(BaseModel):

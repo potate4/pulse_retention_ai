@@ -39,14 +39,15 @@ def analyze_banking_behavior(timeline: pd.DataFrame) -> Dict[str, Any]:
     risk_signals = []
     industry_metrics = {}
 
-    # Define time periods
-    now = datetime.now()
+    # Convert event_date to datetime if not already
+    timeline['event_date'] = pd.to_datetime(timeline['event_date'])
+
+    # Define time periods based on the most recent event in the data
+    # This allows analysis to work with historical data
+    now = timeline['event_date'].max()
     last_7_days = now - timedelta(days=7)
     last_30_days = now - timedelta(days=30)
     last_90_days = now - timedelta(days=90)
-
-    # Convert event_date to datetime if not already
-    timeline['event_date'] = pd.to_datetime(timeline['event_date'])
 
     # 1. Login Frequency Analysis
     login_events = timeline[timeline['event_type'] == 'login']
@@ -205,7 +206,9 @@ def calculate_engagement_level(timeline: pd.DataFrame, lookback_date: datetime) 
     # Factors: activity count, feature diversity, recency
     activity_count = len(recent_data)
     feature_diversity = recent_data['event_type'].nunique()
-    days_since_last = (datetime.now() - recent_data['event_date'].max()).days
+    # Use max date from timeline for recency calculation
+    max_date = timeline['event_date'].max()
+    days_since_last = (max_date - recent_data['event_date'].max()).days
 
     # Score components
     activity_score = min(100, activity_count * 2)

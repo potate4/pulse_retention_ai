@@ -4,7 +4,7 @@ Behavior Analysis API Endpoints
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from app.api.deps import get_db
 from app.db.models.organization import Organization
@@ -42,6 +42,7 @@ def get_organization(org_id: uuid.UUID, db: Session) -> Organization:
 @router.post("/organizations/{org_id}/analyze-behaviors", response_model=BatchBehaviorAnalysisResponse)
 async def analyze_customer_behaviors(
     org_id: uuid.UUID,
+    limit: Optional[int] = None,
     db: Session = Depends(get_db)
 ):
     """
@@ -58,11 +59,16 @@ async def analyze_customer_behaviors(
     - Banking: Login frequency, transaction volume, feature usage
     - Telecom: Data usage, call patterns, plan utilization
     - Ecommerce: Purchase velocity, cart abandonment, return rates
+
+    Args:
+        org_id: Organization UUID
+        limit: Optional limit on number of customers to process (useful for testing)
+        db: Database session
     """
     org = get_organization(org_id, db)
 
     try:
-        result = batch_analyze_behaviors(org_id, db)
+        result = batch_analyze_behaviors(org_id, db, limit=limit)
 
         return BatchBehaviorAnalysisResponse(
             success=result['success'],
@@ -129,6 +135,10 @@ async def get_customer_behavior(
             org_type = org.org_type.value if hasattr(org.org_type, 'value') else org.org_type
 
             analysis_data = analyze_customer(customer_id, org_type, db)
+
+            # Map extra_data to metadata for the response
+            if 'extra_data' in analysis_data:
+                analysis_data['metadata'] = analysis_data.pop('extra_data')
 
             return BehaviorAnalysisResponse(**analysis_data)
 

@@ -162,7 +162,8 @@ def analyze_customer(
 
 def batch_analyze_behaviors(
     organization_id: UUID,
-    db: Session
+    db: Session,
+    limit: Optional[int] = None
 ) -> Dict[str, Any]:
     """
     Batch analyze behaviors for all customers in an organization.
@@ -170,6 +171,7 @@ def batch_analyze_behaviors(
     Args:
         organization_id: Organization UUID
         db: Database session
+        limit: Optional limit on number of customers to process
 
     Returns:
         Status dictionary with counts and errors
@@ -182,15 +184,21 @@ def batch_analyze_behaviors(
 
         org_type = org.org_type.value if hasattr(org.org_type, 'value') else org.org_type
 
-        # Get all customers
-        customers = db.query(Customer).filter(
+        # Get all customers (with optional limit)
+        query = db.query(Customer).filter(
             Customer.organization_id == organization_id
-        ).all()
+        )
+
+        if limit is not None and limit > 0:
+            query = query.limit(limit)
+
+        customers = query.all()
 
         total_customers = len(customers)
         customer_ids = [c.id for c in customers]
 
-        print(f"Analyzing behavior for {total_customers} customers (org_type: {org_type})...")
+        limit_msg = f" (limited to {limit})" if limit else ""
+        print(f"Analyzing behavior for {total_customers} customers{limit_msg} (org_type: {org_type})...")
 
         # Get existing analyses and clean up duplicates
         existing_analyses = db.query(BehaviorAnalysis).filter(
