@@ -1,63 +1,62 @@
 """
 ROI/Profit-Calculation API Endpoints
 Handles HTTP requests for ROI metrics, profit analysis, and cost-benefit calculations.
+Uses real data from high-risk (churn > 80%), high-value (top 10% monetary score) customers.
 """
 from fastapi import APIRouter, HTTPException, Depends, status, Query
 from typing import List, Dict, Any
+from sqlalchemy.orm import Session
+import uuid
+
+from app.api.deps import get_db, get_current_active_user
+from app.db.models.user import User
+from app.services.roi_calculator import (
+    get_roi_metrics as calc_roi_metrics,
+    get_profit_trend as calc_profit_trend,
+    get_cost_breakdown as calc_cost_breakdown,
+    get_campaign_roi as calc_campaign_roi,
+    get_retention_savings as calc_retention_savings
+)
 
 router = APIRouter()
 
 
-# TODO: Replace with actual auth dependency when ready
-async def get_current_org_id():
-    """Mock organization ID - replace with actual auth"""
-    return 1
+def get_current_org_id(current_user: User = Depends(get_current_active_user)) -> uuid.UUID:
+    """Get the organization ID for the current authenticated user.
+    In this system, the organization ID is the same as the user ID."""
+    return current_user.id
 
 
 @router.get("/metrics")
 async def get_roi_metrics(
-    org_id: int = Depends(get_current_org_id),
+    org_id: uuid.UUID = Depends(get_current_org_id),
+    db: Session = Depends(get_db),
     timeframe: str = Query("monthly", regex="^(monthly|quarterly|yearly)$")
 ) -> Dict[str, Any]:
     """
-    Get key ROI and financial metrics.
+    Get key ROI and financial metrics based on high-risk, high-value customers.
+    
+    Calculates ROI from customers with:
+    - Churn probability > 80%
+    - Top 10% monetary score
     
     Args:
         timeframe: Time period for metrics (monthly, quarterly, yearly)
     
     Returns:
         Dictionary containing:
-        - totalRevenue: Total revenue from all campaigns
-        - totalCosts: Total operating costs
+        - totalRevenue: Total revenue from high-value customers (monetary_score × 100)
+        - totalCosts: Retention costs (10% of revenue)
         - netProfit: Revenue - Costs
         - roiPercentage: Return on investment percentage
         - avgCustomerLTV: Average customer lifetime value
-        - costPerAcquisition: Cost to acquire each customer
         - costPerRetention: Cost to retain each customer
         - paybackPeriod: Months to break even
         - breakEvenDate: Date when investment breaks even
-        - revenueTrend: Revenue change percentage from previous period
-        - costTrend: Cost change percentage from previous period
-        - profitTrend: Profit change percentage from previous period
-        - roiTrend: ROI change percentage from previous period
+        - customerCount: Number of high-risk, high-value customers
     """
     try:
-        # TODO: Replace with actual database queries
-        metrics = {
-            "totalRevenue": 1250000,
-            "totalCosts": 450000,
-            "netProfit": 800000,
-            "roiPercentage": 177.78,
-            "avgCustomerLTV": 5200,
-            "costPerAcquisition": 850,
-            "costPerRetention": 450,
-            "paybackPeriod": 3,
-            "breakEvenDate": "2025-03-15",
-            "revenueTrend": 12.5,
-            "costTrend": -5.2,
-            "profitTrend": 15.3,
-            "roiTrend": 18.7
-        }
+        metrics = calc_roi_metrics(org_id, timeframe, db)
         return metrics
     except Exception as e:
         raise HTTPException(
@@ -68,11 +67,12 @@ async def get_roi_metrics(
 
 @router.get("/profit-trend")
 async def get_profit_trend(
-    org_id: int = Depends(get_current_org_id),
+    org_id: uuid.UUID = Depends(get_current_org_id),
+    db: Session = Depends(get_db),
     timeframe: str = Query("monthly", regex="^(monthly|quarterly|yearly)$")
 ) -> List[Dict[str, Any]]:
     """
-    Get profit trend over time.
+    Get profit trend over time based on high-risk, high-value customer data.
     
     Args:
         timeframe: Time period for trend data
@@ -85,27 +85,7 @@ async def get_profit_trend(
         - costs: Total costs for the period
     """
     try:
-        # TODO: Replace with actual database queries
-        trend_data = [
-            {"period": "January", "profit": 65000, "revenue": 150000, "costs": 85000},
-            {"period": "February", "profit": 72000, "revenue": 165000, "costs": 93000},
-            {"period": "March", "profit": 78000, "revenue": 175000, "costs": 97000},
-            {"period": "April", "profit": 82000, "revenue": 188000, "costs": 106000},
-            {"period": "May", "profit": 86000, "revenue": 198000, "costs": 112000},
-            {"period": "June", "profit": 95000, "revenue": 215000, "costs": 120000}
-        ]
-        
-        if timeframe == "quarterly":
-            trend_data = [
-                {"period": "Q1 2025", "profit": 215000, "revenue": 490000, "costs": 275000},
-                {"period": "Q2 2025", "profit": 263000, "revenue": 601000, "costs": 338000}
-            ]
-        elif timeframe == "yearly":
-            trend_data = [
-                {"period": "2023", "profit": 650000, "revenue": 1500000, "costs": 850000},
-                {"period": "2024", "profit": 800000, "revenue": 1250000, "costs": 450000}
-            ]
-        
+        trend_data = calc_profit_trend(org_id, timeframe, db)
         return trend_data
     except Exception as e:
         raise HTTPException(
@@ -116,11 +96,12 @@ async def get_profit_trend(
 
 @router.get("/cost-breakdown")
 async def get_cost_breakdown(
-    org_id: int = Depends(get_current_org_id),
+    org_id: uuid.UUID = Depends(get_current_org_id),
+    db: Session = Depends(get_db),
     timeframe: str = Query("monthly", regex="^(monthly|quarterly|yearly)$")
 ) -> List[Dict[str, Any]]:
     """
-    Get cost breakdown by category.
+    Get cost breakdown by category for retention efforts.
     
     Returns:
         List of cost categories with:
@@ -129,14 +110,7 @@ async def get_cost_breakdown(
         - color: Color for visualization
     """
     try:
-        # TODO: Replace with actual database queries
-        cost_data = [
-            {"name": "Email Campaigns", "value": 125000, "color": "#3b82f6"},
-            {"name": "Staff Salaries", "value": 180000, "color": "#ef4444"},
-            {"name": "Infrastructure", "value": 85000, "color": "#10b981"},
-            {"name": "Tools & Software", "value": 45000, "color": "#f59e0b"},
-            {"name": "Marketing", "value": 15000, "color": "#8b5cf6"}
-        ]
+        cost_data = calc_cost_breakdown(org_id, db)
         return cost_data
     except Exception as e:
         raise HTTPException(
@@ -147,12 +121,13 @@ async def get_cost_breakdown(
 
 @router.get("/campaign-roi")
 async def get_campaign_roi(
-    org_id: int = Depends(get_current_org_id),
+    org_id: uuid.UUID = Depends(get_current_org_id),
+    db: Session = Depends(get_db),
     timeframe: str = Query("monthly", regex="^(monthly|quarterly|yearly)$"),
     limit: int = Query(10, ge=1, le=50)
 ) -> List[Dict[str, Any]]:
     """
-    Get ROI for each campaign.
+    Get ROI for each retention campaign type.
     
     Args:
         timeframe: Time period for campaign analysis
@@ -166,14 +141,7 @@ async def get_campaign_roi(
         - costs: Campaign costs
     """
     try:
-        # TODO: Replace with actual database queries
-        campaign_data = [
-            {"campaign": "Retention Email Series", "roi": 250.5, "revenue": 450000, "costs": 135000},
-            {"campaign": "Win-back Campaign", "roi": 185.3, "revenue": 280000, "costs": 95000},
-            {"campaign": "VIP Customer Exclusive", "roi": 320.0, "revenue": 200000, "costs": 50000},
-            {"campaign": "Anniversary Promotion", "roi": 145.8, "revenue": 165000, "costs": 95000},
-            {"campaign": "New Feature Launch", "roi": 98.5, "revenue": 120000, "costs": 60000}
-        ]
+        campaign_data = calc_campaign_roi(org_id, db)
         return campaign_data[:limit]
     except Exception as e:
         raise HTTPException(
@@ -184,11 +152,12 @@ async def get_campaign_roi(
 
 @router.get("/retention-savings")
 async def get_retention_savings(
-    org_id: int = Depends(get_current_org_id),
+    org_id: uuid.UUID = Depends(get_current_org_id),
+    db: Session = Depends(get_db),
     timeframe: str = Query("monthly", regex="^(monthly|quarterly|yearly)$")
 ) -> List[Dict[str, Any]]:
     """
-    Get savings from retention by customer segment.
+    Get savings from retention by customer risk segment.
     
     Returns:
         List of segments with:
@@ -198,14 +167,7 @@ async def get_retention_savings(
         - label: Display label for the segment
     """
     try:
-        # TODO: Replace with actual database queries
-        savings_data = [
-            {"segment": "High-Value", "savings": 350000, "customersRetained": 245, "label": "High-Value Customers"},
-            {"segment": "Enterprise", "savings": 280000, "customersRetained": 18, "label": "Enterprise"},
-            {"segment": "Growth", "savings": 185000, "customersRetained": 425, "label": "Growth Segment"},
-            {"segment": "Churn-Risk", "savings": 145000, "customersRetained": 156, "label": "Churn-Risk"},
-            {"segment": "New", "savings": 95000, "customersRetained": 320, "label": "New Customers"}
-        ]
+        savings_data = calc_retention_savings(org_id, db)
         return savings_data
     except Exception as e:
         raise HTTPException(
@@ -216,62 +178,29 @@ async def get_retention_savings(
 
 @router.get("/summary")
 async def get_roi_summary(
-    org_id: int = Depends(get_current_org_id),
+    org_id: uuid.UUID = Depends(get_current_org_id),
+    db: Session = Depends(get_db),
     timeframe: str = Query("monthly", regex="^(monthly|quarterly|yearly)$")
 ) -> Dict[str, Any]:
     """
     Get comprehensive ROI summary combining all financial data.
     
     Returns:
-        Dictionary with all ROI-related data
+        Dictionary with all ROI-related data from real customer predictions
     """
     try:
-        # TODO: Replace with actual aggregation logic
+        metrics = calc_roi_metrics(org_id, timeframe, db)
+        profit_trend = calc_profit_trend(org_id, timeframe, db)
+        cost_breakdown = calc_cost_breakdown(org_id, db)
+        campaign_roi = calc_campaign_roi(org_id, db)
+        retention_savings = calc_retention_savings(org_id, db)
+        
         summary = {
-            "metrics": {
-                "totalRevenue": 1250000,
-                "totalCosts": 450000,
-                "netProfit": 800000,
-                "roiPercentage": 177.78,
-                "avgCustomerLTV": 5200,
-                "costPerAcquisition": 850,
-                "costPerRetention": 450,
-                "paybackPeriod": 3,
-                "breakEvenDate": "2025-03-15",
-                "revenueTrend": 12.5,
-                "costTrend": -5.2,
-                "profitTrend": 15.3,
-                "roiTrend": 18.7
-            },
-            "profitTrend": [
-                {"period": "January", "profit": 65000, "revenue": 150000, "costs": 85000},
-                {"period": "February", "profit": 72000, "revenue": 165000, "costs": 93000},
-                {"period": "March", "profit": 78000, "revenue": 175000, "costs": 97000},
-                {"period": "April", "profit": 82000, "revenue": 188000, "costs": 106000},
-                {"period": "May", "profit": 86000, "revenue": 198000, "costs": 112000},
-                {"period": "June", "profit": 95000, "revenue": 215000, "costs": 120000}
-            ],
-            "costBreakdown": [
-                {"name": "Email Campaigns", "value": 125000, "color": "#3b82f6"},
-                {"name": "Staff Salaries", "value": 180000, "color": "#ef4444"},
-                {"name": "Infrastructure", "value": 85000, "color": "#10b981"},
-                {"name": "Tools & Software", "value": 45000, "color": "#f59e0b"},
-                {"name": "Marketing", "value": 15000, "color": "#8b5cf6"}
-            ],
-            "campaignROI": [
-                {"campaign": "Retention Email Series", "roi": 250.5, "revenue": 450000, "costs": 135000},
-                {"campaign": "Win-back Campaign", "roi": 185.3, "revenue": 280000, "costs": 95000},
-                {"campaign": "VIP Customer Exclusive", "roi": 320.0, "revenue": 200000, "costs": 50000},
-                {"campaign": "Anniversary Promotion", "roi": 145.8, "revenue": 165000, "costs": 95000},
-                {"campaign": "New Feature Launch", "roi": 98.5, "revenue": 120000, "costs": 60000}
-            ],
-            "retentionSavings": [
-                {"segment": "High-Value", "savings": 350000, "customersRetained": 245, "label": "High-Value Customers"},
-                {"segment": "Enterprise", "savings": 280000, "customersRetained": 18, "label": "Enterprise"},
-                {"segment": "Growth", "savings": 185000, "customersRetained": 425, "label": "Growth Segment"},
-                {"segment": "Churn-Risk", "savings": 145000, "customersRetained": 156, "label": "Churn-Risk"},
-                {"segment": "New", "savings": 95000, "customersRetained": 320, "label": "New Customers"}
-            ]
+            "metrics": metrics,
+            "profitTrend": profit_trend,
+            "costBreakdown": cost_breakdown,
+            "campaignROI": campaign_roi,
+            "retentionSavings": retention_savings
         }
         return summary
     except Exception as e:
