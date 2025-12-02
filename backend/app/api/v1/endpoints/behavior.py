@@ -2,7 +2,8 @@
 Behavior Analysis API Endpoints
 """
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import datetime
+from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import Dict, Any, Optional
 
@@ -10,11 +11,13 @@ from app.api.deps import get_db
 from app.db.models.organization import Organization
 from app.db.models.customer import Customer
 from app.db.models.behavior_analysis import BehaviorAnalysis
+from app.db.models.background_job import BackgroundJob
 from app.schemas.behavior import (
     BehaviorAnalysisResponse,
     BatchBehaviorAnalysisResponse,
     BehaviorInsightsResponse
 )
+from app.schemas.background_job import BackgroundJobResponse, BackgroundJobCreateResponse
 from app.services.behavior_analysis import (
     analyze_customer,
     batch_analyze_behaviors
@@ -39,16 +42,69 @@ def get_organization(org_id: uuid.UUID, db: Session) -> Organization:
     return org
 
 
-@router.post("/organizations/{org_id}/analyze-behaviors", response_model=BatchBehaviorAnalysisResponse)
+def process_behavior_analysis_background(
+    org_id: uuid.UUID,
+    job_id: uuid.UUID,
+    db_session: Session,
+    limit: Optional[int] = None
+):
+    """
+    Background task: Run batch behavior analysis for an organization.
+    
+    Args:
+        org_id: Organization UUID
+        job_id: Background job UUID for status tracking
+        db_session: Database session
+        limit: Optional limit on number of customers to process
+    """
+    try:
+        # Get job and update status to processing
+        job = db_session.query(BackgroundJob).filter(BackgroundJob.id == job_id).first()
+        if not job:
+            return
+        
+        job.status = "processing"
+        job.started_at = datetime.utcnow()
+        db_session.commit()
+        
+        # Run batch behavior analysis
+        result = batch_analyze_behaviors(org_id, db_session, limit=limit)
+        
+        # Update job with results
+        job.status = "completed" if result['success'] else "failed"
+        job.total_items = result.get('total_customers', 0)
+        job.processed_items = result.get('analyzed', 0)
+        job.result = {
+            'success': result['success'],
+            'total_customers': result.get('total_customers', 0),
+            'analyzed': result.get('analyzed', 0)
+        }
+        job.errors = result.get('errors')
+        job.completed_at = datetime.utcnow()
+        db_session.commit()
+        
+    except Exception as e:
+        # Update job as failed
+        job = db_session.query(BackgroundJob).filter(BackgroundJob.id == job_id).first()
+        if job:
+            job.status = "failed"
+            job.error_message = str(e)
+            job.completed_at = datetime.utcnow()
+            db_session.commit()
+        print(f"Error in behavior analysis background task: {str(e)}")
+
+
+@router.post("/organizations/{org_id}/analyze-behaviors", response_model=BackgroundJobCreateResponse)
 async def analyze_customer_behaviors(
     org_id: uuid.UUID,
-    limit: Optional[int] = None,
+    limit: Optional[int] = Query(None, description="Optional limit on number of customers to process"),
+    background_tasks: BackgroundTasks = None,
     db: Session = Depends(get_db)
 ):
     """
-    Run behavior analysis for all customers in an organization.
+    Run behavior analysis for all customers in an organization (Background Task).
 
-    This endpoint will:
+    This endpoint will start a background job that:
     1. Determine organization type (banking, telecom, ecommerce)
     2. For each customer, analyze transaction history
     3. Detect industry-specific risk signals
@@ -63,25 +119,127 @@ async def analyze_customer_behaviors(
     Args:
         org_id: Organization UUID
         limit: Optional limit on number of customers to process (useful for testing)
-        db: Database session
+    
+    Returns:
+    - job_id: Use this to check the status of the behavior analysis job
     """
     org = get_organization(org_id, db)
 
     try:
-        result = batch_analyze_behaviors(org_id, db, limit=limit)
+        # Create background job record
+        job = BackgroundJob(
+            id=uuid.uuid4(),
+            organization_id=org_id,
+            job_type="behavior_analysis",
+            status="pending",
+            total_items=0,
+            processed_items=0
+        )
+        db.add(job)
+        db.commit()
+        db.refresh(job)
+        
+        # Add background task
+        background_tasks.add_task(
+            process_behavior_analysis_background,
+            org_id,
+            job.id,
+            db,
+            limit
+        )
 
-        return BatchBehaviorAnalysisResponse(
-            success=result['success'],
-            total_customers=result['total_customers'],
-            analyzed=result['analyzed'],
-            errors=result.get('errors')
+        return BackgroundJobCreateResponse(
+            success=True,
+            job_id=job.id,
+            job_type="behavior_analysis",
+            status="pending",
+            message="Behavior analysis job started in background. Use /behavior/jobs/{job_id}/status to check progress."
         )
 
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error in batch behavior analysis: {str(e)}"
+            detail=f"Error starting behavior analysis job: {str(e)}"
         )
+
+
+@router.get("/jobs/{job_id}/status", response_model=BackgroundJobResponse)
+async def get_behavior_job_status(
+    job_id: uuid.UUID,
+    db: Session = Depends(get_db)
+):
+    """
+    Get status of a behavior analysis background job.
+    
+    Returns:
+    - Job status (pending, processing, completed, failed)
+    - Progress (total_items, processed_items)
+    - Results when completed
+    - Error message if failed
+    """
+    job = db.query(BackgroundJob).filter(
+        BackgroundJob.id == job_id,
+        BackgroundJob.job_type == "behavior_analysis"
+    ).first()
+    
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Behavior analysis job {job_id} not found"
+        )
+    
+    return BackgroundJobResponse(
+        job_id=job.id,
+        organization_id=job.organization_id,
+        job_type=job.job_type,
+        status=job.status,
+        batch_id=job.batch_id,
+        total_items=job.total_items,
+        processed_items=job.processed_items,
+        result=job.result,
+        error_message=job.error_message,
+        errors=job.errors,
+        created_at=job.created_at,
+        started_at=job.started_at,
+        completed_at=job.completed_at
+    )
+
+
+@router.get("/organizations/{org_id}/jobs", response_model=list)
+async def list_behavior_jobs(
+    org_id: uuid.UUID,
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db)
+):
+    """
+    List all behavior analysis jobs for an organization.
+    """
+    org = get_organization(org_id, db)
+    
+    jobs = db.query(BackgroundJob).filter(
+        BackgroundJob.organization_id == org_id,
+        BackgroundJob.job_type == "behavior_analysis"
+    ).order_by(BackgroundJob.created_at.desc()).limit(limit).offset(offset).all()
+    
+    return [
+        BackgroundJobResponse(
+            job_id=job.id,
+            organization_id=job.organization_id,
+            job_type=job.job_type,
+            status=job.status,
+            batch_id=job.batch_id,
+            total_items=job.total_items,
+            processed_items=job.processed_items,
+            result=job.result,
+            error_message=job.error_message,
+            errors=job.errors,
+            created_at=job.created_at,
+            started_at=job.started_at,
+            completed_at=job.completed_at
+        )
+        for job in jobs
+    ]
 
 
 @router.get("/customers/{customer_id}/behavior", response_model=BehaviorAnalysisResponse)

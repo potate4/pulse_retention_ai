@@ -13,3 +13,4 @@ from app.db.models.dataset import Dataset  # noqa - NEW for Churn V2
 from app.db.models.prediction_batch import PredictionBatch  # noqa - NEW for Churn V2
 from app.db.models.customer_segment import CustomerSegment  # noqa - NEW for Segmentation
 from app.db.models.behavior_analysis import BehaviorAnalysis  # noqa - NEW for Behavior Analysis
+from app.db.models.background_job import BackgroundJob  # noqa - NEW for Background Jobs
