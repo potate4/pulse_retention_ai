@@ -12,8 +12,8 @@ from app.helpers.auto_mapping_generator import auto_preprocess_dataset
 
 
 BASE_DIR = Path(__file__).resolve().parent
-INPUT_PATH = BASE_DIR / "datasets" / "telco_churn.csv"
-OUTPUT_PATH = BASE_DIR / "datasets" / "telco_auto_normalized.csv"
+INPUT_PATH = BASE_DIR / "datasets" / "eComm.csv"
+OUTPUT_PATH = BASE_DIR / "datasets" / "eComm_AUTOs.csv"
 
 
 def main() -> None:
