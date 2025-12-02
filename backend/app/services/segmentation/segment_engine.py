@@ -614,33 +614,74 @@ def batch_segment_customers_from_db(
 
         print(f"Found {len(customer_uuid_map)} customers in database")
 
-        # STEP 4: Get existing segments
+        # STEP 4: Get existing segments and clean up duplicates
         customer_uuids = list(customer_uuid_map.values())
         existing_segments = db.query(CustomerSegment).filter(
             CustomerSegment.customer_id.in_(customer_uuids)
         ).all()
 
-        existing_segments_lookup = {seg.customer_id: seg for seg in existing_segments}
+        # Build lookup and handle duplicates by keeping only the most recent
+        existing_segments_lookup = {}
+        duplicate_segments = []
+
+        for seg in existing_segments:
+            if seg.customer_id in existing_segments_lookup:
+                # Found a duplicate - keep the most recent one
+                existing_seg = existing_segments_lookup[seg.customer_id]
+                if seg.assigned_at > existing_seg.assigned_at:
+                    # This segment is newer, remove the old one
+                    duplicate_segments.append(existing_seg)
+                    existing_segments_lookup[seg.customer_id] = seg
+                else:
+                    # Keep the existing one, mark this for removal
+                    duplicate_segments.append(seg)
+            else:
+                existing_segments_lookup[seg.customer_id] = seg
+
+        # Delete duplicate segments if found
+        if duplicate_segments:
+            print(f"Found {len(duplicate_segments)} duplicate segments, cleaning up...")
+            try:
+                for dup_seg in duplicate_segments:
+                    db.delete(dup_seg)
+                db.commit()
+                print(f"Removed {len(duplicate_segments)} duplicate segments")
+            except Exception as cleanup_error:
+                print(f"Warning: Could not clean up duplicates: {str(cleanup_error)}")
+                db.rollback()
+                # Rebuild the lookup after rollback
+                existing_segments = db.query(CustomerSegment).filter(
+                    CustomerSegment.customer_id.in_(customer_uuids)
+                ).all()
+                existing_segments_lookup = {seg.customer_id: seg for seg in existing_segments}
 
         # STEP 5: Process all customers and create segments
         segmented = 0
         errors = []
         segments_to_add = []
         segments_to_update = []
+        processed_customer_ids = set()  # Track processed customers to prevent duplicates in this batch
+
+        print(f"Starting segmentation loop for {len(churn_lookup)} customers...")
+        print(f"  Existing segments found: {len(existing_segments_lookup)}")
 
         for external_id, churn_probability in churn_lookup.items():
             try:
-                # Validate churn score
-                if not 0.0 <= churn_probability <= 1.0:
-                    errors.append(f"Invalid churn score {churn_probability} for customer {external_id}")
-                    continue
-
                 # Check if customer exists in database
                 if external_id not in customer_uuid_map:
                     errors.append(f"Customer {external_id} not found in Customer table")
                     continue
 
                 customer_uuid = customer_uuid_map[external_id]
+
+                # Skip if already processed in this batch (safeguard against duplicate data)
+                if customer_uuid in processed_customer_ids:
+                    continue
+
+                # Validate churn score
+                if not 0.0 <= churn_probability <= 1.0:
+                    errors.append(f"Invalid churn score {churn_probability} for customer {external_id}")
+                    continue
 
                 # Check if RFM features exist for this customer
                 if external_id not in rfm_lookup:
@@ -685,16 +726,19 @@ def batch_segment_customers_from_db(
                 existing_segment = existing_segments_lookup.get(customer_uuid)
 
                 if existing_segment:
-                    # Update existing
-                    existing_segment.segment = segment
-                    existing_segment.segment_score = segment_score
-                    existing_segment.rfm_category = rfm_category
-                    existing_segment.churn_risk_level = churn_risk
-                    existing_segment.assigned_at = datetime.utcnow()
-                    existing_segment.extra_data = metadata
-                    segments_to_update.append(existing_segment)
+                    # Prepare update data as dictionary (for bulk_update_mappings)
+                    update_data = {
+                        'id': existing_segment.id,
+                        'segment': segment,
+                        'segment_score': segment_score,
+                        'rfm_category': rfm_category,
+                        'churn_risk_level': churn_risk,
+                        'assigned_at': datetime.utcnow(),
+                        'extra_data': metadata
+                    }
+                    segments_to_update.append(update_data)
                 else:
-                    # Create new
+                    # Create new segment object
                     new_segment = CustomerSegment(
                         customer_id=customer_uuid,
                         organization_id=organization_id,
@@ -706,6 +750,8 @@ def batch_segment_customers_from_db(
                     )
                     segments_to_add.append(new_segment)
 
+                # Mark customer as processed
+                processed_customer_ids.add(customer_uuid)
                 segmented += 1
 
                 # Progress indicator
@@ -717,18 +763,88 @@ def batch_segment_customers_from_db(
                 continue
 
         # STEP 6: Batch insert/update segments
-        try:
-            if segments_to_add:
-                db.bulk_save_objects(segments_to_add)
-                print(f"  Adding {len(segments_to_add)} new segments...")
+        print(f"\nPreparing to commit:")
+        print(f"  Total processed: {segmented}")
+        print(f"  Segments to add: {len(segments_to_add)}")
+        print(f"  Segments to update: {len(segments_to_update)}")
+        print(f"  Errors so far: {len(errors)}")
 
-            # Commit all changes in ONE transaction
-            db.commit()
+        try:
+            # First, bulk update existing segments in batches (commit each batch separately)
+            if segments_to_update:
+                print(f"  Bulk updating {len(segments_to_update)} existing segments in batches...")
+                batch_size = 500
+                total_batches = (len(segments_to_update) + batch_size - 1) // batch_size
+                for i in range(0, len(segments_to_update), batch_size):
+                    batch = segments_to_update[i:i + batch_size]
+                    db.bulk_update_mappings(CustomerSegment, batch)
+                    db.commit()  # Commit each batch separately
+                    print(f"    Updated and committed batch {i//batch_size + 1}/{total_batches} ({len(batch)} segments)")
+                print(f"  All {len(segments_to_update)} segments updated...")
+
+            # Then, bulk insert new segments in batches (commit each batch separately)
+            if segments_to_add:
+                print(f"  Bulk inserting {len(segments_to_add)} new segments in batches...")
+                batch_size = 500
+                total_batches = (len(segments_to_add) + batch_size - 1) // batch_size
+                for i in range(0, len(segments_to_add), batch_size):
+                    batch = segments_to_add[i:i + batch_size]
+                    db.bulk_save_objects(batch)
+                    db.commit()  # Commit each batch separately
+                    print(f"    Inserted and committed batch {i//batch_size + 1}/{total_batches} ({len(batch)} segments)")
+                print(f"  All {len(segments_to_add)} segments added...")
+
             print(f"Completed: {segmented}/{total_customers} customers segmented")
         except Exception as commit_error:
-            print(f"Commit error: {str(commit_error)}")
+            print(f"Bulk commit failed: {str(commit_error)}")
+            print(f"  Segments to add: {len(segments_to_add)}")
+            print(f"  Segments to update: {len(segments_to_update)}")
             db.rollback()
-            errors.append(f"Database commit error: {str(commit_error)}")
+
+            # Try inserting segments one by one to identify problematic records
+            print("Attempting individual segment insertion...")
+            successful_inserts = 0
+            failed_inserts = 0
+
+            try:
+                # Re-apply updates one by one using update statement
+                for seg_data in segments_to_update:
+                    try:
+                        db.query(CustomerSegment).filter(
+                            CustomerSegment.id == seg_data['id']
+                        ).update(seg_data)
+                        db.commit()
+                        successful_inserts += 1
+                    except Exception as e:
+                        db.rollback()
+                        failed_inserts += 1
+                        errors.append(f"Failed to update segment {seg_data['id']}: {str(e)}")
+
+                # Insert new segments one by one
+                for seg in segments_to_add:
+                    try:
+                        db.add(seg)
+                        db.commit()
+                        successful_inserts += 1
+                    except Exception as e:
+                        db.rollback()
+                        failed_inserts += 1
+                        errors.append(f"Failed to add segment for customer {seg.customer_id}: {str(e)}")
+
+                print(f"Individual insertion complete: {successful_inserts} successful, {failed_inserts} failed")
+
+                if successful_inserts > 0:
+                    return {
+                        'success': True,
+                        'total_customers': total_customers,
+                        'segmented': successful_inserts,
+                        'new_segments': len([s for s in segments_to_add]),
+                        'updated_segments': len([s for s in segments_to_update]),
+                        'errors': errors if errors else None
+                    }
+            except Exception as retry_error:
+                print(f"Individual insertion also failed: {str(retry_error)}")
+                errors.append(f"Retry error: {str(retry_error)}")
 
             return {
                 'success': False,

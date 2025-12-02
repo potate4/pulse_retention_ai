@@ -1,34 +1,45 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import ThemeToggle from '../components/ThemeToggle'
 
 const Home = () => {
   const navigate = useNavigate()
-  const { user, logout } = useAuthStore()
-  const [activePage, setActivePage] = useState('dashboard')
-  const [hoveredItem, setHoveredItem] = useState(null)
+  const { user } = useAuthStore()
 
-  const handleLogout = () => {
-    logout()
-    navigate('/')
-  }
-
-  const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-    { id: 'email', label: 'Email Campaign', icon: '📧' },
-    { id: 'history', label: 'Email History', icon: '📜' },
-    { id: 'analytics', label: 'Analytics', icon: '📈' },
-    { id: 'roi', label: 'ROI Dashboard', icon: '💰' }
+  const quickActions = [
+    {
+      id: 'churn',
+      title: 'Churn Prediction',
+      description: 'Analyze customer churn risk',
+      icon: '🎯',
+      path: '/churn-prediction',
+      color: 'from-blue-500 to-indigo-600'
+    },
+    {
+      id: 'email',
+      title: 'Email Campaign',
+      description: 'Send targeted emails',
+      icon: '📧',
+      path: '/email-campaign',
+      color: 'from-purple-500 to-pink-600'
+    },
+    {
+      id: 'analytics',
+      title: 'Analytics',
+      description: 'View customer insights',
+      icon: '📈',
+      path: '/analytics',
+      color: 'from-green-500 to-teal-600'
+    },
+    {
+      id: 'roi',
+      title: 'ROI Dashboard',
+      description: 'Track campaign ROI',
+      icon: '💰',
+      path: '/roi-dashboard',
+      color: 'from-yellow-500 to-orange-600'
+    }
   ]
-
-  const handleMenuClick = (id) => {
-    setActivePage(id)
-    if (id === 'email') navigate('/email-campaign')
-    if (id === 'history') navigate('/email-history')
-    if (id === 'analytics') navigate('/analytics')
-    if (id === 'roi') navigate('/roi-dashboard')
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -52,87 +63,35 @@ const Home = () => {
         </p>
       </div>
 
-      <div style={{ display: 'flex', minHeight: 'calc(100vh - 100px)' }}>
-        {/* Sidebar */}
-        <div
-          style={{
-            width: '250px',
-            backgroundColor: '#334155',
-            color: 'white',
-            padding: '30px 20px',
-            borderRight: '1px solid #cbd5e1',
-          }}
-        >
-          <div style={{ marginBottom: '30px' }}>
-            <h3 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#cbd5e1' }}>
-              FEATURES
-            </h3>
-            {menuItems.map((item) => (
-              <div
-                key={item.id}
-                onClick={() => handleMenuClick(item.id)}
-                onMouseEnter={() => setHoveredItem(item.id)}
-                onMouseLeave={() => setHoveredItem(null)}
-                style={{
-                  cursor: 'pointer',
-                  padding: '12px 12px',
-                  marginBottom: '8px',
-                  borderRadius: '6px',
-                  backgroundColor: activePage === item.id ? '#475569' : (hoveredItem === item.id ? '#3f4a57' : 'transparent'),
-                  color: activePage === item.id ? '#667eea' : 'white',
-                  fontWeight: activePage === item.id ? '600' : '400',
-                  transition: 'all 0.2s ease',
-                  borderLeft: activePage === item.id ? '3px solid #667eea' : '3px solid transparent',
-                  paddingLeft: activePage === item.id ? '9px' : '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px'
-                }}
-              >
-                <span style={{ fontSize: '16px' }}>{item.icon}</span>
-                <span>{item.label}</span>
-              </div>
-            ))}
+      {/* User Status Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        {/* Account Status Card */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+          <div className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-2">
+            Account Status
           </div>
+          <div className="text-3xl font-bold text-gray-900 dark:text-white mb-3">
+            {user?.is_active ? 'Active' : 'Inactive'}
+          </div>
+          <div className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+            user?.is_active
+              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+              : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+          }`}>
+            {user?.is_active ? '✓ Account Active' : '⚠ Account Inactive'}
+          </div>
+        </div>
 
-          <div
-            style={{
-              marginTop: '40px',
-              padding: '15px',
-              backgroundColor: '#475569',
-              borderRadius: '8px',
-              fontSize: '13px',
-            }}
-          >
-            <p style={{ margin: '0 0 8px 0', color: '#e2e8f0' }}>
-              👤 <strong>{user?.name || 'User'}</strong>
-            </p>
-            <p style={{ margin: '0 0 8px 0', color: '#cbd5e1', fontSize: '12px' }}>
-              {user?.email}
-            </p>
-            <p style={{ margin: '0 0 8px 0', color: '#cbd5e1', fontSize: '12px' }}>
-              Role: <strong className="capitalize">{user?.role || 'user'}</strong>
-            </p>
-            <button
-              onClick={handleLogout}
-              style={{
-                width: '100%',
-                marginTop: '12px',
-                padding: '8px',
-                backgroundColor: '#ef4444',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '12px',
-                fontWeight: '600',
-                transition: 'background-color 0.2s'
-              }}
-              onMouseOver={(e) => e.target.style.backgroundColor = '#dc2626'}
-              onMouseOut={(e) => e.target.style.backgroundColor = '#ef4444'}
-            >
-              Logout
-            </button>
+        {/* Role Card */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border-l-4 border-green-500">
+          <div className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-2">
+            Role
+          </div>
+          <div className="text-3xl font-bold text-gray-900 dark:text-white mb-3 capitalize">
+            {user?.role || 'User'}
+          </div>
+          <div className="text-gray-500 dark:text-gray-400 text-sm">
+            Administrator Access
           </div>
         </div>
 
@@ -147,16 +106,26 @@ const Home = () => {
               Here's your account summary and quick actions
             </p>
           </div>
+          <div className="text-xl font-bold text-gray-900 dark:text-white mb-3 truncate">
+            {user?.email || 'Not Set'}
+          </div>
+          <div className="text-gray-500 dark:text-gray-400 text-sm">
+            Primary Contact
+          </div>
+        </div>
+      </div>
 
-          {/* User Status Cards */}
-          {activePage === 'dashboard' && (
+      {/* Quick Actions Section */}
+      <div className="mb-10">
+        <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+          Quick Actions
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {quickActions.map((action) => (
             <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                gap: '20px',
-                marginBottom: '40px',
-              }}
+              key={action.id}
+              onClick={() => navigate(action.path)}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group overflow-hidden"
             >
               <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border-l-4 border-indigo-500">
                 <div className="text-gray-600 dark:text-gray-400 text-xs mb-2">
@@ -196,9 +165,17 @@ const Home = () => {
                 <div className="text-gray-400 dark:text-gray-500 text-xs mt-2">
                   Primary contact
                 </div>
+                <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  {action.title}
+                </h4>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  {action.description}
+                </p>
               </div>
             </div>
-          )}
+          ))}
+        </div>
+      </div>
 
           {/* Feature Cards */}
           {activePage === 'dashboard' && (
@@ -247,7 +224,7 @@ const Home = () => {
                 </div>
               </div>
             </div>
-          )}
+          </div>
 
           {/* Recent Activity */}
           {activePage === 'dashboard' && (
@@ -282,27 +259,11 @@ const Home = () => {
                 </div>
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
-
-      {/* Footer */}
-      <div
-        style={{
-          backgroundColor: '#1e293b',
-          color: '#cbd5e1',
-          padding: '20px 40px',
-          textAlign: 'center',
-          borderTop: '1px solid #334155',
-        }}
-      >
-        <p style={{ margin: 0, fontSize: '13px' }}>
-          © 2025 Pulse Retention AI. All rights reserved. | Customer Intelligence Platform
-        </p>
-      </div>
-    </div>
+    </Layout>
   )
 }
 
 export default Home
-

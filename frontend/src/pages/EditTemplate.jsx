@@ -1,5 +1,6 @@
 import React from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import Layout from '../components/Layout'
 import TemplateEditor from '../components/TemplateEditor'
 import { sendEmails } from '../api/emails'
 
@@ -48,24 +49,35 @@ const EditTemplate = () => {
 
   if (!subject && !htmlBody) {
     return (
-      <div className="min-h-screen bg-light-bg dark:bg-dark-bg flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-light-text-primary dark:text-dark-text-primary mb-2">No Template Data</h2>
-          <p className="text-light-text-secondary dark:text-dark-text-secondary mb-4">Please generate a preview first</p>
-          <button
-            onClick={() => navigate('/email-campaign')}
-            className="px-6 py-2 bg-primary-teal text-white rounded-lg hover:bg-primary-slate"
-          >
-            Go to Email Campaign
-          </button>
+      <Layout activePage="email">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px' }}>
+          <div style={{ textAlign: 'center' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1e293b', marginBottom: '10px' }}>No Template Data</h2>
+            <p style={{ color: '#64748b', marginBottom: '20px' }}>Please generate a preview first</p>
+            <button
+              onClick={() => navigate('/email-campaign')}
+              style={{
+                padding: '12px 24px',
+                backgroundColor: '#667eea',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                fontWeight: '600',
+              }}
+            >
+              Go to Email Campaign
+            </button>
+          </div>
         </div>
-      </div>
+      </Layout>
     )
   }
 
   return (
-    <div className="min-h-screen bg-light-bg dark:bg-dark-bg py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <Layout activePage="email">
+      <div>
         <TemplateEditor
           initialSubject={subject}
           initialHtmlBody={htmlBody}
@@ -74,7 +86,7 @@ const EditTemplate = () => {
           onCancel={handleCancel}
         />
       </div>
-    </div>
+    </Layout>
   )
 }
 

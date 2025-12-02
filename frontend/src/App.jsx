@@ -11,6 +11,8 @@ import EditTemplate from './pages/EditTemplate'
 import EmailHistory from './pages/EmailHistory'
 import Analytics from './pages/Analytics'
 import ROIDashboard from './pages/ROIDashboard'
+import ChurnPrediction from './pages/ChurnPrediction'
+import Predictions from './pages/Predictions'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
@@ -60,6 +62,16 @@ function App() {
         <Route path="/roi-dashboard" element={
           <ProtectedRoute>
             <ROIDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/churn-prediction" element={
+          <ProtectedRoute>
+            <ChurnPrediction />
+          </ProtectedRoute>
+        } />
+        <Route path="/predictions" element={
+          <ProtectedRoute>
+            <Predictions />
           </ProtectedRoute>
         } />
         <Route path="/" element={<Landing />} />

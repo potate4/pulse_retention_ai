@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import SegmentSelector from '../components/SegmentSelector'
 import CustomerTable from '../components/CustomerTable'
 import EmailPreviewCard from '../components/EmailPreviewCard'
+import Layout from '../components/Layout'
 import { getSegments, getSegmentCustomers, generateEmailPreview, sendEmails } from '../api/emails'
 
 /**
@@ -145,32 +146,18 @@ const EmailCampaign = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header with Back Button */}
-        <div className="mb-8">
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="text-indigo-600 hover:text-indigo-700 text-sm font-medium mb-4"
-          >
-            ← Back to Dashboard
-          </button>
-        
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Email Campaign</h1>
-              <p className="mt-2 text-gray-600 dark:text-gray-300">
-                Create and send personalized emails to your customer segments
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <span className="text-2xl">📧</span>
-            </div>
-          </div>
+    <Layout activePage="email">
+      <div>
+        {/* Header */}
+        <div style={{ marginBottom: '30px' }}>
+          <h1 style={{ margin: '0 0 10px 0', fontSize: '32px', color: '#1e293b' }}>Email Campaign</h1>
+          <p style={{ margin: '0', color: '#64748b', fontSize: '16px' }}>
+            Create and send personalized emails to your customer segments
+          </p>
         </div>
 
         {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
           {/* Left Column - Selection */}
           <div className="lg:col-span-2 space-y-6">
             {/* Segment Selector */}
@@ -302,7 +289,7 @@ const EmailCampaign = () => {
           </div>
         </div>
       </div>
-    </div>
+    </Layout>
   )
 }
 
