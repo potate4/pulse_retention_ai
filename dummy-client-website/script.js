@@ -5,7 +5,7 @@
   'use strict';
 
   // Constants
-  const BUSINESS_ID = 'DEMO001';
+  const BUSINESS_ID = '586a35d8-eb2c-422c-8c7c-34c5f0d2a22a'; // Valid UUID format
   const STORAGE_KEYS = {
     EMAIL: 'pulse_customer_email',
     BUSINESS_ID: 'pulse_business_id'
@@ -119,6 +119,7 @@
     widgetScript.src = '../popup-widget/pulse-retention-widget.js';
     widgetScript.setAttribute('data-business-id', businessId);
     widgetScript.setAttribute('data-email', email);
+    widgetScript.setAttribute('data-api-url', 'http://127.0.0.1:8000');
 
     // Add to document
     document.body.appendChild(widgetScript);
