@@ -6,18 +6,15 @@ from fastapi import APIRouter, HTTPException, Depends, status, Query
 from typing import List, Dict, Any
 from datetime import datetime, timedelta
 
+from app.api.deps import get_current_active_user
+from app.db.models.user import User
+
 router = APIRouter()
-
-
-# TODO: Replace with actual auth dependency when ready
-async def get_current_org_id():
-    """Mock organization ID - replace with actual auth"""
-    return 1
 
 
 @router.get("/metrics")
 async def get_analytics_metrics(
-    org_id: int = Depends(get_current_org_id)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Get key analytics metrics.
@@ -51,7 +48,7 @@ async def get_analytics_metrics(
 
 @router.get("/churn-trend")
 async def get_churn_trend(
-    org_id: int = Depends(get_current_org_id),
+    current_user: User = Depends(get_current_active_user),
     months: int = Query(6, ge=1, le=24)
 ) -> List[Dict[str, Any]]:
     """
@@ -86,7 +83,7 @@ async def get_churn_trend(
 
 @router.get("/segments-distribution")
 async def get_segments_distribution(
-    org_id: int = Depends(get_current_org_id)
+    current_user: User = Depends(get_current_active_user)
 ) -> List[Dict[str, Any]]:
     """
     Get customer distribution across segments.
@@ -115,7 +112,7 @@ async def get_segments_distribution(
 
 @router.get("/churn-reasons")
 async def get_churn_reasons(
-    org_id: int = Depends(get_current_org_id),
+    current_user: User = Depends(get_current_active_user),
     limit: int = Query(5, ge=1, le=20)
 ) -> List[Dict[str, Any]]:
     """
@@ -148,7 +145,7 @@ async def get_churn_reasons(
 
 @router.get("/risk-distribution")
 async def get_risk_distribution(
-    org_id: int = Depends(get_current_org_id)
+    current_user: User = Depends(get_current_active_user)
 ) -> List[Dict[str, Any]]:
     """
     Get customer distribution by risk level.
@@ -176,7 +173,7 @@ async def get_risk_distribution(
 
 @router.get("/summary")
 async def get_analytics_summary(
-    org_id: int = Depends(get_current_org_id)
+    current_user: User = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     Get comprehensive analytics summary combining all key data.

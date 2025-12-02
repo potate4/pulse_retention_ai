@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey
+from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import uuid
@@ -34,6 +34,9 @@ class Dataset(Base):
 
     # Status
     status = Column(String, default="uploaded", nullable=False)  # uploaded, processing, ready, error
+    
+    # Active flag - only one active dataset per organization
+    is_active = Column(Boolean, default=True, nullable=True, index=True)
 
     # Timestamps
     uploaded_at = Column(DateTime, default=datetime.utcnow, nullable=False)

@@ -1,0 +1,53 @@
+{
+  "accuracy": 1.0,
+  "precision": 1.0,
+  "recall": 1.0,
+  "specificity": 1.0,
+  "f1_score": 1.0,
+  "roc_auc": 1.0,
+  "confusion_matrix": {
+    "true_negatives": 125,
+    "false_positives": 0,
+    "false_negatives": 0,
+    "true_positives": 1284
+  },
+  "feature_importance": {
+    "recency_score": -0.2518,
+    "frequency_score": -0.2207,
+    "monetary_score": -0.1294,
+    "tenure_days": 0.0,
+    "avg_transaction_value": 0.0848,
+    "activity_trend": -0.9337,
+    "transaction_velocity": 0.0,
+    "days_between_transactions": 0.0,
+    "consistency_score": 0.0,
+    "activity_ratio": -0.9337,
+    "monetary_trend": -0.2207,
+    "lifecycle_stage": 0.0,
+    "engagement_score": -0.2518,
+    "rf_ratio": -0.3033,
+    "avg_days_since_last": 0.1057
+  },
+  "model_type": "logistic_regression",
+  "train_samples": 5634,
+  "test_samples": 1409,
+  "total_samples": 7043,
+  "churn_rate": 0.9114,
+  "class_balance": {
+    "non_churned": 624,
+    "churned": 6419
+  },
+  "feature_scaling": true,
+  "hyperparameter_tuning": true,
+  "cv_scores": {
+    "mean": 1.0,
+    "std": 0.0,
+    "scores": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ]
+  }
+}
