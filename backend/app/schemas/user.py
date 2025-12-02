@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
+import uuid
 from app.core.roles import Role
 
 
@@ -16,7 +17,7 @@ class UserLogin(BaseModel):
 
 
 class UserResponse(BaseModel):
-    id: int
+    id: uuid.UUID
     name: str
     email: str
     role: str

@@ -15,7 +15,7 @@ class Transaction(Base):
     event_date = Column(Date, nullable=False, index=True)
     amount = Column(Numeric(10, 2), nullable=True)
     event_type = Column(String, nullable=True)  # 'purchase', 'login', 'usage', etc.
-    metadata = Column(JSONB, nullable=True)  # Additional org-specific fields
+    extra_data = Column(JSONB, nullable=True)  # Additional org-specific fields
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     
     # Relationships

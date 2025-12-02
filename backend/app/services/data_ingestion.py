@@ -23,7 +23,7 @@ STANDARD_SCHEMA = {
     "event_date": "date",   # Required: Transaction/activity date
     "amount": float,         # Optional: Transaction value
     "event_type": str,       # Optional: Type of event ('purchase', 'login', etc.)
-    "metadata": dict         # Optional: Additional fields (will be stored as JSON)
+    "extra_data": dict         # Optional: Additional fields (will be stored as JSON)
 }
 
 
@@ -68,15 +68,15 @@ def normalize_data(
     else:
         normalized["event_type"] = None
     
-    # Store any additional columns as metadata
+    # Store any additional columns as extra_data
     standard_cols = ["customer_id", "event_date", "amount", "event_type"]
     other_cols = [col for col in df.columns if col not in standard_cols]
     
     if other_cols:
         # Convert additional columns to JSON records
-        normalized["metadata"] = df[other_cols].to_dict(orient="records")
+        normalized["extra_data"] = df[other_cols].to_dict(orient="records")
     else:
-        normalized["metadata"] = None
+        normalized["extra_data"] = None
     
     return normalized
 
@@ -192,7 +192,7 @@ def store_transactions(
                         event_date=row["event_date"].date() if hasattr(row["event_date"], "date") else row["event_date"],
                         amount=float(row["amount"]) if "amount" in row and pd.notna(row["amount"]) else None,
                         event_type=str(row["event_type"]) if "event_type" in row and pd.notna(row["event_type"]) else None,
-                        metadata=row.get("metadata")
+                        extra_data=row.get("extra_data")
                     )
                     db.add(transaction)
                     records_stored += 1
