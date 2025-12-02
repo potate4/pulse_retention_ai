@@ -5,18 +5,15 @@ Handles HTTP requests for ROI metrics, profit analysis, and cost-benefit calcula
 from fastapi import APIRouter, HTTPException, Depends, status, Query
 from typing import List, Dict, Any
 
+from app.api.deps import get_current_active_user
+from app.db.models.user import User
+
 router = APIRouter()
-
-
-# TODO: Replace with actual auth dependency when ready
-async def get_current_org_id():
-    """Mock organization ID - replace with actual auth"""
-    return 1
 
 
 @router.get("/metrics")
 async def get_roi_metrics(
-    org_id: int = Depends(get_current_org_id),
+    current_user: User = Depends(get_current_active_user),
     timeframe: str = Query("monthly", regex="^(monthly|quarterly|yearly)$")
 ) -> Dict[str, Any]:
     """
@@ -68,7 +65,7 @@ async def get_roi_metrics(
 
 @router.get("/profit-trend")
 async def get_profit_trend(
-    org_id: int = Depends(get_current_org_id),
+    current_user: User = Depends(get_current_active_user),
     timeframe: str = Query("monthly", regex="^(monthly|quarterly|yearly)$")
 ) -> List[Dict[str, Any]]:
     """
@@ -116,7 +113,7 @@ async def get_profit_trend(
 
 @router.get("/cost-breakdown")
 async def get_cost_breakdown(
-    org_id: int = Depends(get_current_org_id),
+    current_user: User = Depends(get_current_active_user),
     timeframe: str = Query("monthly", regex="^(monthly|quarterly|yearly)$")
 ) -> List[Dict[str, Any]]:
     """
@@ -147,7 +144,7 @@ async def get_cost_breakdown(
 
 @router.get("/campaign-roi")
 async def get_campaign_roi(
-    org_id: int = Depends(get_current_org_id),
+    current_user: User = Depends(get_current_active_user),
     timeframe: str = Query("monthly", regex="^(monthly|quarterly|yearly)$"),
     limit: int = Query(10, ge=1, le=50)
 ) -> List[Dict[str, Any]]:
@@ -184,7 +181,7 @@ async def get_campaign_roi(
 
 @router.get("/retention-savings")
 async def get_retention_savings(
-    org_id: int = Depends(get_current_org_id),
+    current_user: User = Depends(get_current_active_user),
     timeframe: str = Query("monthly", regex="^(monthly|quarterly|yearly)$")
 ) -> List[Dict[str, Any]]:
     """
@@ -216,7 +213,7 @@ async def get_retention_savings(
 
 @router.get("/summary")
 async def get_roi_summary(
-    org_id: int = Depends(get_current_org_id),
+    current_user: User = Depends(get_current_active_user),
     timeframe: str = Query("monthly", regex="^(monthly|quarterly|yearly)$")
 ) -> Dict[str, Any]:
     """

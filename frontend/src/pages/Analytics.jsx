@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { analyticsAPI } from '../api/analytics'
+import Layout from '../components/Layout'
 
 /**
  * Analytics Page
@@ -237,23 +238,21 @@ const Analytics = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <Layout activePage="analytics">
+      <div>
         {/* Header */}
-        <div className="mb-8">
-          <button
-            onClick={() => navigate('/home')}
-            className="text-indigo-600 hover:text-indigo-700 text-sm font-medium mb-4"
-          >
-            ← Back to Dashboard
-          </button>
-          <h1 className="text-3xl font-bold text-gray-900">Analytics & Insights</h1>
-          <p className="text-gray-600 mt-2">Customer metrics, churn analysis, and retention insights</p>
+        <div style={{ marginBottom: '30px' }}>
+          <h1 style={{ margin: '0 0 10px 0', fontSize: '32px', color: '#1e293b' }}>
+            Analytics & Insights
+          </h1>
+          <p style={{ margin: '0', color: '#64748b', fontSize: '16px' }}>
+            Customer metrics, churn analysis, and retention insights
+          </p>
         </div>
 
         {/* Key Metrics */}
         {metrics && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '30px' }}>
             <MetricCard
               title="Total Customers"
               value={metrics.totalCustomers.toLocaleString()}
@@ -298,7 +297,7 @@ const Analytics = () => {
         )}
 
         {/* Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px', marginBottom: '30px' }}>
           {/* Churn & Retention Trend */}
           {churnData && (
             <SimpleLineChart
@@ -339,14 +338,14 @@ const Analytics = () => {
         </div>
 
         {/* Data Source Info */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-blue-800">
+        <div style={{ backgroundColor: '#eff6ff', border: '1px solid #93c5fd', borderRadius: '8px', padding: '15px' }}>
+          <p style={{ margin: 0, fontSize: '14px', color: '#1e40af' }}>
             <strong>ℹ️ Real Data:</strong> This page is displaying live data from the backend API. 
             All metrics, trends, and distributions are fetched from the analytics endpoints.
           </p>
         </div>
       </div>
-    </div>
+    </Layout>
   )
 }
 

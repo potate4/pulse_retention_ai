@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import Layout from '../components/Layout'
 import { roiAPI } from '../api/roi'
 
 /**
@@ -213,55 +214,47 @@ const ROIDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <Layout activePage="roi">
+      <div>
         {/* Header */}
-        <div className="mb-8">
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="text-green-600 hover:text-green-700 text-sm font-medium mb-4"
-          >
-            ← Back to Dashboard
-          </button>
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">ROI Dashboard</h1>
-              <p className="text-gray-600 mt-2">Business profitability and return on investment analysis</p>
-            </div>
-            
-            {/* Timeframe Selector */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => setTimeframe('monthly')}
-                className={`px-4 py-2 rounded-lg font-medium transition ${
-                  timeframe === 'monthly'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                Monthly
-              </button>
-              <button
-                onClick={() => setTimeframe('quarterly')}
-                className={`px-4 py-2 rounded-lg font-medium transition ${
-                  timeframe === 'quarterly'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                Quarterly
-              </button>
-              <button
-                onClick={() => setTimeframe('yearly')}
-                className={`px-4 py-2 rounded-lg font-medium transition ${
-                  timeframe === 'yearly'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                Yearly
-              </button>
-            </div>
+        <div style={{ marginBottom: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h1 style={{ margin: '0 0 10px 0', fontSize: '32px', color: '#1e293b' }}>ROI Dashboard</h1>
+            <p style={{ margin: '0', color: '#64748b', fontSize: '16px' }}>Business profitability and return on investment analysis</p>
+          </div>
+          
+          {/* Timeframe Selector */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setTimeframe('monthly')}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                timeframe === 'monthly'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setTimeframe('quarterly')}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                timeframe === 'quarterly'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              Quarterly
+            </button>
+            <button
+              onClick={() => setTimeframe('yearly')}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                timeframe === 'yearly'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              Yearly
+            </button>
           </div>
         </div>
 
@@ -387,7 +380,7 @@ const ROIDashboard = () => {
           </p>
         </div>
       </div>
-    </div>
+    </Layout>
   )
 }
 
