@@ -13,6 +13,8 @@ from app.db.models.customer_feature import CustomerFeature  # noqa
 from app.db.models.churn_prediction import ChurnPrediction  # noqa
 from app.db.models.model_metadata import ModelMetadata  # noqa
 from app.db.models.data_processing_status import DataProcessingStatus  # noqa
+from app.db.models.dataset import Dataset  # noqa
+from app.db.models.prediction_batch import PredictionBatch, CustomerPrediction  # noqa
 
 config = context.config
 

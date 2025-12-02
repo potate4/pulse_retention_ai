@@ -69,14 +69,17 @@ def normalize_telco_to_standard_schema(
             customer_id = row['customer_id']
             tenure_months = int(row['tenure']) if pd.notna(row['tenure']) else 0
             monthly_charges = float(row['MonthlyCharges']) if pd.notna(row['MonthlyCharges']) else 0.0
-            
+
+            # Get churn label (use 'churned' column which is 0/1)
+            churn_label = int(row['churned']) if 'churned' in row and pd.notna(row['churned']) else 0
+
             # Create one transaction per month of tenure
             # Most recent transaction = base_date
             # Go backwards in time for each month
             for month_offset in range(tenure_months):
                 # Calculate transaction date (going backwards from base_date)
                 transaction_date = base_date - timedelta(days=30 * (tenure_months - month_offset - 1))
-                
+
                 # Store other columns as metadata
                 metadata = {
                     'gender': str(row.get('gender', '')),
@@ -90,21 +93,23 @@ def normalize_telco_to_standard_schema(
                     'PaymentMethod': str(row.get('PaymentMethod', '')),
                     'TotalCharges': float(row.get('TotalCharges', 0)) if pd.notna(row.get('TotalCharges')) else 0.0
                 }
-                
+
                 transactions.append({
                     'customer_id': customer_id,
                     'event_date': transaction_date.strftime('%Y-%m-%d'),
                     'amount': monthly_charges,
-                    'event_type': 'monthly_charge'
+                    'event_type': 'monthly_charge',
+                    'churn_label': churn_label
                 })
-            
+
             # If tenure is 0, create at least one transaction
             if tenure_months == 0:
                 transactions.append({
                     'customer_id': customer_id,
                     'event_date': base_date.strftime('%Y-%m-%d'),
                     'amount': monthly_charges,
-                    'event_type': 'monthly_charge'
+                    'event_type': 'monthly_charge',
+                    'churn_label': churn_label
                 })
     else:
         # Alternative: Create single snapshot event per customer
@@ -112,22 +117,26 @@ def normalize_telco_to_standard_schema(
             customer_id = row['customer_id']
             monthly_charges = float(row['MonthlyCharges']) if pd.notna(row['MonthlyCharges']) else 0.0
             tenure_months = int(row['tenure']) if pd.notna(row['tenure']) else 0
-            
+
+            # Get churn label (use 'churned' column which is 0/1)
+            churn_label = int(row['churned']) if 'churned' in row and pd.notna(row['churned']) else 0
+
             # Calculate last transaction date based on tenure
             last_transaction_date = base_date - timedelta(days=30 * tenure_months) if tenure_months > 0 else base_date
-            
+
             transactions.append({
                 'customer_id': customer_id,
                 'event_date': last_transaction_date.strftime('%Y-%m-%d'),
                 'amount': monthly_charges,
-                'event_type': 'monthly_charge'
+                'event_type': 'monthly_charge',
+                'churn_label': churn_label
             })
-    
+
     # Create normalized DataFrame
     normalized_df = pd.DataFrame(transactions)
-    
-    # Ensure proper column order
-    normalized_df = normalized_df[['customer_id', 'event_date', 'amount', 'event_type']]
+
+    # Ensure proper column order (include churn_label)
+    normalized_df = normalized_df[['customer_id', 'event_date', 'amount', 'event_type', 'churn_label']]
     
     # Save to CSV
     normalized_df.to_csv(output_file, index=False)
@@ -169,7 +178,10 @@ def normalize_telco_simple(
         customer_id = str(row['customerID'])
         tenure_months = int(row['tenure']) if pd.notna(row['tenure']) else 0
         monthly_charges = float(row['MonthlyCharges']) if pd.notna(row['MonthlyCharges']) else 0.0
-        
+
+        # Get churn label (use 'churned' column which is 0/1)
+        churn_label = int(row['churned']) if 'churned' in row and pd.notna(row['churned']) else 0
+
         # Calculate last transaction date
         # If tenure is 0, use base_date. Otherwise, go back by tenure months
         if tenure_months == 0:
@@ -177,14 +189,15 @@ def normalize_telco_simple(
         else:
             # Approximate: tenure months ago
             last_date = base_date - timedelta(days=30 * tenure_months)
-        
+
         transactions.append({
             'customer_id': customer_id,
             'event_date': last_date.strftime('%Y-%m-%d'),
             'amount': monthly_charges,
-            'event_type': 'monthly_charge'
+            'event_type': 'monthly_charge',
+            'churn_label': churn_label
         })
-    
+
     # Create DataFrame
     normalized_df = pd.DataFrame(transactions)
     

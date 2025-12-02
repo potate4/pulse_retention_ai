@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m app.helpers.normalize_telco_dataset:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
