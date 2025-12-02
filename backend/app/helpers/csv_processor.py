@@ -348,7 +348,9 @@ def validate_standard_schema(df: pd.DataFrame, strict: bool = True) -> Tuple[boo
 
     # Validate data in required columns
     if 'customer_id' in df.columns:
-        null_count = df['customer_id'].isna().sum()
+        # Handle potential duplicate 'customer_id' columns by flattening to numpy
+        # so we always get a scalar count instead of a Series.
+        null_count = df['customer_id'].isna().to_numpy().sum()
         if null_count > 0:
             errors.append(f"Found {null_count} null values in customer_id column")
 
@@ -390,7 +392,23 @@ def standardize_and_clean(df: pd.DataFrame) -> pd.DataFrame:
     """
     df = df.copy()
 
-    # Select only standard schema columns
+    # Ensure all standard columns exist; if missing, create with safe defaults
+    for col, col_type in STANDARD_SCHEMA.items():
+        if col not in df.columns:
+            if col == 'customer_id':
+                df[col] = ''
+            elif col == 'event_date':
+                df[col] = ''
+            elif col == 'amount':
+                df[col] = 0.0
+            elif col == 'event_type':
+                df[col] = 'unknown'
+            elif col == 'churn_label':
+                df[col] = 0
+            else:
+                df[col] = None
+
+    # Select only standard schema columns (now guaranteed to exist)
     df = df[list(STANDARD_SCHEMA.keys())]
 
     # Remove rows with null customer_id

@@ -254,3 +254,21 @@ standardized_df.to_csv('standardized_data.csv', index=False)
 # Now upload standardized_data.csv to the system
 ```
 
+## LLM-Assisted Mapping Generation
+
+For new organizations with unfamiliar schemas, you can use the Gemini-powered helper in `app.helpers.auto_mapping_generator` to propose mappings automatically as a list of Pydantic objects and then convert them into the tuple format expected by `csv_processor`.
+
+```python
+from app.helpers.auto_mapping_generator import (
+    auto_preprocess_dataset,
+    get_preprocessing_plan_only,
+)
+
+# Option 1: One-shot normalize and save
+df_normalized = auto_preprocess_dataset("raw_org_data.csv", "normalized.csv")
+
+# Option 2: Just inspect the AI-generated plan and mappings
+plan, mappings = get_preprocessing_plan_only("raw_org_data.csv")
+# `mappings` is ready to pass into `preprocess_to_standard` / `process_standardized_csv`
+```
+
