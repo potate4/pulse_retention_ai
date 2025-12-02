@@ -242,7 +242,7 @@ const Analytics = () => {
         {/* Header */}
         <div className="mb-8">
           <button
-            onClick={() => navigate('/home')}
+            onClick={() => navigate('/dashboard')}
             className="text-indigo-600 hover:text-indigo-700 text-sm font-medium mb-4"
           >
             ← Back to Dashboard
