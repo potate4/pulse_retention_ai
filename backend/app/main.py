@@ -7,11 +7,11 @@ app = FastAPI()
 app.include_router(api_router_v1, prefix="/api/v1") 
 
 origins = [
-    # "*"
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "https://shrobon-audio.web.app",
-    "https://audio.shrobon.com",
+    "*",  # Allow all origins for widget to work (development mode)
+    # "http://localhost:5173",
+    # "http://localhost:5174",
+    # "https://shrobon-audio.web.app",
+    # "https://audio.shrobon.com",
 ]
 
 allow_credentials = True
@@ -35,4 +35,4 @@ async def get_welcome_message():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -1,83 +1,284 @@
 (function() {
   'use strict';
 
+  const WIDGET_VERSION = '1.0.0';
+
   // Auto-run when script loads
-  console.log('[Pulse Retention Widget] Initializing...');
+  console.log(`[Pulse Retention Widget v${WIDGET_VERSION}] Initializing...`);
 
   // Read attributes from the script tag
   const currentScript = document.currentScript;
   const businessId = currentScript?.getAttribute('data-business-id') || 'UNKNOWN';
   const customerEmail = currentScript?.getAttribute('data-email') || 'UNKNOWN';
+  const apiUrl = currentScript?.getAttribute('data-api-url') || 'http://127.0.0.1:5000';
 
   console.log('[Pulse Retention Widget] Business ID:', businessId);
   console.log('[Pulse Retention Widget] Customer Email:', customerEmail);
+  console.log('[Pulse Retention Widget] API URL:', apiUrl);
 
-  // Extract customer's first name from email
-  function getCustomerName(email) {
-    if (!email || email === 'UNKNOWN') return 'Valued Customer';
-    const localPart = email.split('@')[0];
-    // Capitalize first letter
-    const name = localPart.charAt(0).toUpperCase() + localPart.slice(1);
-    return name;
+  // Inject CSS styles dynamically
+  function injectStyles() {
+    if (document.getElementById('pulse-widget-styles')) {
+      return; // Styles already injected
+    }
+
+    const styleElement = document.createElement('style');
+    styleElement.id = 'pulse-widget-styles';
+    styleElement.textContent = `
+/* Pulse Retention Widget Popup Styles */
+/* Color Palette:
+   #7AACB3 - header/accents
+   #4D6E81 - borders/lines
+   #CFBDA8 - hover or soft text
+   #AA5376 - CTA button
+   #3B3758 - popup background
+*/
+
+/* Overlay */
+.pulse-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: transparent;
+  pointer-events: none;
+  z-index: 999999;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+/* Popup Container */
+.pulse-popup-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #3B3758;
+  border: 2px solid #4D6E81;
+  border-radius: 12px;
+  width: 380px;
+  max-width: calc(100vw - 40px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  pointer-events: auto;
+  animation: pulse-popup-slide-in 0.4s ease-out;
+}
+
+@keyframes pulse-popup-slide-in {
+  from {
+    transform: translateX(420px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Close Button */
+.pulse-popup-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  color: #CFBDA8;
+  font-size: 32px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: color 0.2s ease, transform 0.2s ease;
+  z-index: 10;
+}
+
+.pulse-popup-close:hover {
+  color: #7AACB3;
+  transform: scale(1.1);
+}
+
+/* Header */
+.pulse-popup-header {
+  background-color: #7AACB3;
+  padding: 24px 24px 20px 24px;
+  border-radius: 10px 10px 0 0;
+  border-bottom: 2px solid #4D6E81;
+}
+
+.pulse-popup-title {
+  margin: 0;
+  padding: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #3B3758;
+  text-align: center;
+  line-height: 1.3;
+}
+
+/* Body */
+.pulse-popup-body {
+  padding: 28px 24px;
+}
+
+.pulse-popup-message {
+  margin: 0;
+  padding: 0;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #CFBDA8;
+  text-align: left;
+}
+
+.pulse-popup-message p {
+  margin: 0 0 12px 0;
+}
+
+.pulse-popup-message p:last-child {
+  margin-bottom: 0;
+}
+
+.pulse-popup-message strong {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.pulse-popup-message ul {
+  margin: 12px 0;
+  padding-left: 20px;
+  list-style: none;
+}
+
+.pulse-popup-message li {
+  margin: 8px 0;
+  position: relative;
+  padding-left: 8px;
+}
+
+/* Footer */
+.pulse-popup-footer {
+  padding: 0 24px 28px 24px;
+  display: flex;
+  justify-content: center;
+}
+
+/* CTA Button */
+.pulse-popup-cta {
+  display: inline-block;
+  background-color: #AA5376;
+  color: #ffffff;
+  padding: 14px 36px;
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 8px;
+  border: 2px solid #AA5376;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.pulse-popup-cta:hover {
+  background-color: #c9678f;
+  border-color: #c9678f;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(170, 83, 118, 0.4);
+}
+
+.pulse-popup-cta:active {
+  transform: translateY(0);
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+  .pulse-popup-container {
+    width: calc(100vw - 20px);
+    bottom: 10px;
+    right: 10px;
   }
 
-  const customerName = getCustomerName(customerEmail);
+  .pulse-popup-header {
+    padding: 20px 20px 16px 20px;
+  }
 
-  // Dummy data for now (personalized)
-  const dummyPopupData = {
-    title: `Hello ${customerName}!`,
-    message: `
-      <p><strong>We have exclusive offers just for you!!</strong></p>
-      <ul>
-        <li>🚗 Get <strong>₹200 OFF</strong> on your next ride</li>
-        <li>🍕 <strong>50% OFF</strong> on food delivery (up to ₹150)</li>
-        <li>📦 <strong>FREE delivery</strong> on your next grocery order</li>
-      </ul>
-      <p>As you are our special customer, these offers are exclusively for you!</p>
-    `,
-    cta_text: "Claim Your Offer",
-    cta_link: "#"
-  };
+  .pulse-popup-title {
+    font-size: 20px;
+  }
 
-  // Backend call (commented out for now)
-  // function fetchPopupData() {
-  //   return fetch(`/api/popup?business_id=${businessId}&email=${encodeURIComponent(customerEmail)}`)
-  //     .then(response => response.json())
-  //     .then(data => {
-  //       console.log('[Pulse Retention Widget] Fetched popup data:', data);
-  //       return data;
-  //     })
-  //     .catch(error => {
-  //       console.error('[Pulse Retention Widget] Error fetching popup data:', error);
-  //       return null;
-  //     });
-  // }
+  .pulse-popup-body {
+    padding: 24px 20px;
+  }
 
-  // Log popup event to backend (commented out for now)
+  .pulse-popup-message {
+    font-size: 15px;
+  }
+
+  .pulse-popup-footer {
+    padding: 0 20px 24px 20px;
+  }
+
+  .pulse-popup-cta {
+    padding: 12px 28px;
+    font-size: 15px;
+  }
+
+  .pulse-popup-close {
+    font-size: 28px;
+    top: 10px;
+    right: 10px;
+  }
+}
+`;
+    
+    document.head.appendChild(styleElement);
+    console.log('[Pulse Retention Widget] Styles injected');
+  }
+
+  // Fetch popup data from backend
+  function fetchPopupData() {
+    const url = `${apiUrl}/api/v1/widget/offers?business_id=${encodeURIComponent(businessId)}&customer_email=${encodeURIComponent(customerEmail)}`;
+    
+    return fetch(url)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('[Pulse Retention Widget] Fetched popup data:', data);
+        return data;
+      })
+      .catch(error => {
+        console.error('[Pulse Retention Widget] Error fetching popup data:', error);
+        return null;
+      });
+  }
+
+  // Log popup event to backend
   function logPopupEvent(eventType, eventData = {}) {
     console.log('[Pulse Retention Widget] Event:', eventType, eventData);
 
     // Backend event logging
-    // fetch('/api/popup-event', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json'
-    //   },
-    //   body: JSON.stringify({
-    //     business_id: businessId,
-    //     customer_email: customerEmail,
-    //     event_type: eventType,
-    //     event_data: eventData,
-    //     timestamp: new Date().toISOString()
-    //   })
-    // })
-    // .then(response => response.json())
-    // .then(data => {
-    //   console.log('[Pulse Retention Widget] Event logged:', data);
-    // })
-    // .catch(error => {
-    //   console.error('[Pulse Retention Widget] Error logging event:', error);
-    // });
+    const url = `${apiUrl}/api/v1/widget/events`;
+    
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        business_id: businessId,
+        customer_email: customerEmail,
+        event_type: eventType,
+        event_data: eventData,
+        timestamp: new Date().toISOString()
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      console.log('[Pulse Retention Widget] Event logged:', data);
+    })
+    .catch(error => {
+      console.error('[Pulse Retention Widget] Error logging event:', error);
+    });
   }
 
   // Render the popup
@@ -151,25 +352,23 @@
 
   // Initialize the widget with delay
   function initWidget() {
-    // Use dummy data for now
-    const popupData = dummyPopupData;
+    // Inject CSS first
+    injectStyles();
 
-    // To use backend data in the future:
-    // fetchPopupData().then(data => {
-    //   if (data) {
-    //     renderPopup(data);
-    //   } else {
-    //     console.log('[Pulse Retention Widget] No popup data available');
-    //   }
-    // });
-
-    // Optional 2-3 second delay before showing
-    const delayMs = 2500; // 2.5 seconds
-    setTimeout(() => {
-      renderPopup(popupData);
-    }, delayMs);
-
-    console.log(`[Pulse Retention Widget] Popup will appear in ${delayMs}ms`);
+    // Fetch popup data from backend
+    fetchPopupData().then(data => {
+      if (data && data.show_popup) {
+        // Optional 2-3 second delay before showing
+        const delayMs = 2500; // 2.5 seconds
+        setTimeout(() => {
+          renderPopup(data);
+        }, delayMs);
+        
+        console.log(`[Pulse Retention Widget] Popup will appear in ${delayMs}ms`);
+      } else {
+        console.log('[Pulse Retention Widget] No popup to show or offer not available');
+      }
+    });
   }
 
   // Wait for DOM to be ready
