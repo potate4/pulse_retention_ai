@@ -20,20 +20,33 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     # Change customer_id from UUID to String in customer_segments table
+    # Map from internal customer UUID to external_customer_id using churn_predictions
+
+    # customer_segments table
     op.drop_constraint('customer_segments_customer_id_fkey', 'customer_segments', type_='foreignkey')
-    op.alter_column('customer_segments', 'customer_id',
-                    existing_type=postgresql.UUID(),
-                    type_=sa.String(),
-                    existing_nullable=False,
-                    postgresql_using='customer_id::text')
-    
-    # Change customer_id from UUID to String in behavior_analysis table
+    op.add_column('customer_segments', sa.Column('customer_id_temp', sa.String(), nullable=True))
+    op.execute("""
+        UPDATE customer_segments cs
+        SET customer_id_temp = c.external_customer_id
+        FROM customers c
+        WHERE c.id = cs.customer_id
+    """)
+    op.drop_column('customer_segments', 'customer_id')
+    op.alter_column('customer_segments', 'customer_id_temp', new_column_name='customer_id')
+    op.alter_column('customer_segments', 'customer_id', nullable=False)
+
+    # behavior_analysis table
     op.drop_constraint('behavior_analysis_customer_id_fkey', 'behavior_analysis', type_='foreignkey')
-    op.alter_column('behavior_analysis', 'customer_id',
-                    existing_type=postgresql.UUID(),
-                    type_=sa.String(),
-                    existing_nullable=False,
-                    postgresql_using='customer_id::text')
+    op.add_column('behavior_analysis', sa.Column('customer_id_temp', sa.String(), nullable=True))
+    op.execute("""
+        UPDATE behavior_analysis ba
+        SET customer_id_temp = c.external_customer_id
+        FROM customers c
+        WHERE c.id = ba.customer_id
+    """)
+    op.drop_column('behavior_analysis', 'customer_id')
+    op.alter_column('behavior_analysis', 'customer_id_temp', new_column_name='customer_id')
+    op.alter_column('behavior_analysis', 'customer_id', nullable=False)
 
 
 def downgrade() -> None:

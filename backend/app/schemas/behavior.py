@@ -9,7 +9,7 @@ from uuid import UUID
 
 class BehaviorAnalysisResponse(BaseModel):
     """Response schema for customer behavior analysis."""
-    customer_id: UUID
+    customer_id: str  # External customer ID (string)
     organization_id: UUID
     org_type: str
     behavior_score: float

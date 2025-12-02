@@ -16,7 +16,7 @@ class Customer(Base):
     
     # Relationships
     organization = relationship("Organization", back_populates="customers")
-    transactions = relationship("Transaction", back_populates="customer", cascade="all, delete-orphan")
+    # Note: No direct relationship with Transaction - transactions are linked via external_customer_id (string)
     customer_feature = relationship("CustomerFeature", back_populates="customer", uselist=False, cascade="all, delete-orphan")
     churn_prediction = relationship("ChurnPrediction", back_populates="customer", uselist=False, cascade="all, delete-orphan")
 

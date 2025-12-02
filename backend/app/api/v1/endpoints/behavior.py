@@ -8,7 +8,6 @@ from typing import Dict, Any, Optional
 
 from app.api.deps import get_db
 from app.db.models.organization import Organization
-from app.db.models.customer import Customer
 from app.db.models.behavior_analysis import BehaviorAnalysis
 from app.schemas.behavior import (
     BehaviorAnalysisResponse,
@@ -87,7 +86,8 @@ def analyze_customer_behaviors(
 
 @router.get("/customers/{customer_id}/behavior", response_model=BehaviorAnalysisResponse)
 def get_customer_behavior(
-    customer_id: uuid.UUID,
+    customer_id: str,  # External customer ID (string)
+    org_id: uuid.UUID = Query(..., description="Organization ID"),
     db: Session = Depends(get_db)
 ):
     """
@@ -100,19 +100,15 @@ def get_customer_behavior(
     - Personalized recommendations
     - Industry-specific metrics
     """
-    # Get customer to verify existence and get organization
-    customer = db.query(Customer).filter(Customer.id == customer_id).first()
-
-    if not customer:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Customer {customer_id} not found"
-        )
+    # Verify organization exists
+    org = get_organization(org_id, db)
+    org_type = org.org_type.value if hasattr(org.org_type, 'value') else org.org_type
 
     try:
         # Check if analysis already exists
         existing_analysis = db.query(BehaviorAnalysis).filter(
-            BehaviorAnalysis.customer_id == customer_id
+            BehaviorAnalysis.customer_id == customer_id,
+            BehaviorAnalysis.organization_id == org_id
         ).first()
 
         if existing_analysis:
@@ -128,14 +124,14 @@ def get_customer_behavior(
                 risk_signals=existing_analysis.risk_signals or [],
                 recommendations=existing_analysis.recommendations or [],
                 analyzed_at=existing_analysis.analyzed_at,
-                metadata=existing_analysis.metadata
+                metadata=existing_analysis.extra_data
             )
         else:
             # Run fresh analysis
-            org = get_organization(customer.organization_id, db)
-            org_type = org.org_type.value if hasattr(org.org_type, 'value') else org.org_type
-
             analysis_data = analyze_customer(customer_id, org_type, db)
+
+            # Add organization_id to analysis data
+            analysis_data['organization_id'] = org_id
 
             # Map extra_data to metadata for the response
             if 'extra_data' in analysis_data:
