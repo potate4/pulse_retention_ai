@@ -4,7 +4,7 @@ Calculates RFM (Recency, Frequency, Monetary) metrics and additional activity fe
 """
 import pandas as pd
 import numpy as np
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, func

@@ -4,7 +4,7 @@ Loads trained models and generates churn predictions for customers.
 """
 import pandas as pd
 import numpy as np
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Any
 from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
