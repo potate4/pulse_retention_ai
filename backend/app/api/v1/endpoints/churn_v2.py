@@ -15,7 +15,6 @@ from app.db.models.organization import Organization
 from app.db.models.dataset import Dataset
 from app.db.models.model_metadata import ModelMetadata
 from app.db.models.prediction_batch import PredictionBatch, CustomerPrediction
-from app.db.models.background_job import BackgroundJob
 from app.services.storage import (
     upload_to_supabase,
     upload_dataframe_to_supabase,
@@ -529,20 +528,10 @@ async def process_bulk_predictions_background(
     org_id: uuid.UUID,
     batch_id: uuid.UUID,
     csv_content: bytes,
-    db_session: Session,
-    auto_segment: bool = True,
-    auto_analyze: bool = True
+    db_session: Session
 ):
     """
     Background task: Process bulk predictions from uploaded CSV.
-    
-    Args:
-        org_id: Organization UUID
-        batch_id: Prediction batch UUID
-        csv_content: CSV file content as bytes
-        db_session: Database session
-        auto_segment: Whether to automatically run segmentation after predictions complete
-        auto_analyze: Whether to automatically run behavior analysis after segmentation completes
     """
     try:
         # Get batch
@@ -614,41 +603,6 @@ async def process_bulk_predictions_background(
         batch.risk_distribution = risk_distribution
         batch.completed_at = datetime.utcnow()
         db_session.commit()
-        
-        # Chain: Run segmentation if enabled
-        if auto_segment:
-            print(f"Auto-segmentation enabled. Starting segmentation for batch {batch_id}...")
-            try:
-                from app.api.v1.endpoints.segmentation import process_segmentation_background
-                
-                # Create segmentation job
-                segmentation_job = BackgroundJob(
-                    id=uuid.uuid4(),
-                    organization_id=org_id,
-                    job_type="segmentation",
-                    batch_id=batch_id,
-                    status="pending",
-                    total_items=0,
-                    processed_items=0
-                )
-                db_session.add(segmentation_job)
-                db_session.commit()
-                db_session.refresh(segmentation_job)
-                
-                # Run segmentation (pass auto_analyze to chain behavior analysis)
-                process_segmentation_background(
-                    org_id,
-                    segmentation_job.id,
-                    batch_id,
-                    db_session,
-                    trigger_behavior_analysis=auto_analyze
-                )
-                print(f"Segmentation completed for batch {batch_id}")
-                
-            except Exception as seg_error:
-                print(f"Error in auto-segmentation: {str(seg_error)}")
-                # Don't fail the whole batch if segmentation fails
-                # The batch predictions are still valid
 
     except Exception as e:
         batch.status = "failed"
@@ -662,8 +616,6 @@ async def predict_bulk(
     org_id: uuid.UUID,
     file: UploadFile = File(...),
     batch_name: Optional[str] = None,
-    auto_segment: bool = True,
-    auto_analyze: bool = True,
     background_tasks: BackgroundTasks = None,
     db: Session = Depends(get_db)
 ):
@@ -676,8 +628,6 @@ async def predict_bulk(
     3. Runs inference on all customers
     4. Stores predictions in database
     5. Returns predictions CSV
-    6. (Optional) Automatically runs segmentation after predictions
-    7. (Optional) Automatically runs behavior analysis after segmentation
 
     Expected CSV format:
     ```csv
@@ -695,8 +645,6 @@ async def predict_bulk(
         org_id: Organization UUID
         file: CSV file with customer transaction data
         batch_name: Optional name for this batch
-        auto_segment: Whether to automatically run segmentation after predictions (default: True)
-        auto_analyze: Whether to automatically run behavior analysis after segmentation (default: True)
         background_tasks: FastAPI background tasks
         db: Database session
     """
@@ -752,19 +700,8 @@ async def predict_bulk(
             org_id,
             batch.id,
             csv_content,
-            db,
-            auto_segment,
-            auto_analyze
+            db
         )
-        
-        # Build message based on automation settings
-        pipeline_steps = ["Predictions"]
-        if auto_segment:
-            pipeline_steps.append("Segmentation")
-        if auto_segment and auto_analyze:
-            pipeline_steps.append("Behavior Analysis")
-        
-        pipeline_msg = " → ".join(pipeline_steps)
 
         return {
             "success": True,
@@ -772,9 +709,7 @@ async def predict_bulk(
             "batch_name": batch.batch_name,
             "total_customers": total_customers,
             "status": "processing",
-            "auto_segment": auto_segment,
-            "auto_analyze": auto_analyze,
-            "message": f"Pipeline started: {pipeline_msg}. Use /prediction-batches/{{batch_id}} to check status."
+            "message": "Predictions are being generated in background. Use /prediction-batches/{batch_id} to check status."
         }
 
     except Exception as e:
@@ -845,7 +780,7 @@ async def get_batch_predictions(
     db: Session = Depends(get_db)
 ):
     """
-    Get individual customer predictions from a batch.
+    Get individual customer predictions from a batch with segmentation and behavior data.
 
     Args:
         org_id: Organization UUID
@@ -854,8 +789,12 @@ async def get_batch_predictions(
         offset: Offset for pagination (default: 0)
 
     Returns:
-        List of predictions with customer_id, probability, risk segment
+        List of predictions with customer_id, probability, risk segment, segment, and recommendations
     """
+    from app.db.models.customer import Customer
+    from app.db.models.customer_segment import CustomerSegment
+    from app.db.models.behavior_analysis import BehaviorAnalysis
+    
     org = get_organization(org_id, db)
 
     # Verify batch exists
@@ -870,14 +809,30 @@ async def get_batch_predictions(
             detail=f"Prediction batch {batch_id} not found"
         )
 
-    # Get predictions
-    predictions = db.query(CustomerPrediction).filter(
+    # Get predictions with joined segmentation and behavior data
+    predictions = db.query(
+        CustomerPrediction,
+        Customer,
+        CustomerSegment,
+        BehaviorAnalysis
+    ).outerjoin(
+        Customer,
+        Customer.external_customer_id == CustomerPrediction.external_customer_id
+    ).outerjoin(
+        CustomerSegment,
+        CustomerSegment.customer_id == Customer.id
+    ).outerjoin(
+        BehaviorAnalysis,
+        BehaviorAnalysis.customer_id == Customer.id
+    ).filter(
         CustomerPrediction.batch_id == batch_id
     ).limit(limit).offset(offset).all()
 
+    total = db.query(CustomerPrediction).filter(CustomerPrediction.batch_id == batch_id).count()
+
     return {
         "batch_id": str(batch_id),
-        "total": db.query(CustomerPrediction).filter(CustomerPrediction.batch_id == batch_id).count(),
+        "total": total,
         "limit": limit,
         "offset": offset,
         "predictions": [
@@ -885,10 +840,12 @@ async def get_batch_predictions(
                 "customer_id": pred.external_customer_id,
                 "churn_probability": pred.churn_probability,
                 "risk_segment": pred.risk_segment,
+                "segment": segment.segment if segment else None,
+                "recommendations": behavior.recommendations if behavior else None,
                 "features": pred.features,
                 "predicted_at": pred.predicted_at
             }
-            for pred in predictions
+            for pred, customer, segment, behavior in predictions
         ]
     }
 
@@ -934,96 +891,4 @@ async def list_prediction_batches(
             }
             for batch in batches
         ]
-    }
-
-
-@router.get("/organizations/{org_id}/prediction-batches/{batch_id}/pipeline-status")
-async def get_pipeline_status(
-    org_id: uuid.UUID,
-    batch_id: uuid.UUID,
-    db: Session = Depends(get_db)
-):
-    """
-    Get full pipeline status for a prediction batch.
-    
-    Shows the status of:
-    - Predictions (from PredictionBatch)
-    - Segmentation job (if auto_segment was enabled)
-    - Behavior analysis job (if auto_analyze was enabled)
-    
-    Returns:
-        Overall pipeline status and individual job statuses
-    """
-    org = get_organization(org_id, db)
-    
-    # Get prediction batch
-    batch = db.query(PredictionBatch).filter(
-        PredictionBatch.id == batch_id,
-        PredictionBatch.organization_id == org_id
-    ).first()
-    
-    if not batch:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Prediction batch {batch_id} not found"
-        )
-    
-    # Get related segmentation job
-    segmentation_job = db.query(BackgroundJob).filter(
-        BackgroundJob.batch_id == batch_id,
-        BackgroundJob.job_type == "segmentation"
-    ).order_by(BackgroundJob.created_at.desc()).first()
-    
-    # Get related behavior analysis job
-    behavior_job = db.query(BackgroundJob).filter(
-        BackgroundJob.batch_id == batch_id,
-        BackgroundJob.job_type == "behavior_analysis"
-    ).order_by(BackgroundJob.created_at.desc()).first()
-    
-    # Determine overall status
-    statuses = [batch.status]
-    if segmentation_job:
-        statuses.append(segmentation_job.status)
-    if behavior_job:
-        statuses.append(behavior_job.status)
-    
-    if "failed" in statuses:
-        overall_status = "partially_completed" if "completed" in statuses else "failed"
-    elif all(s == "completed" for s in statuses):
-        overall_status = "completed"
-    elif "processing" in statuses:
-        overall_status = "processing"
-    else:
-        overall_status = "pending"
-    
-    return {
-        "batch_id": str(batch_id),
-        "organization_id": str(org_id),
-        "overall_status": overall_status,
-        "prediction": {
-            "status": batch.status,
-            "total_customers": batch.total_customers,
-            "avg_churn_probability": batch.avg_churn_probability,
-            "risk_distribution": batch.risk_distribution,
-            "completed_at": batch.completed_at,
-            "error_message": batch.error_message
-        },
-        "segmentation": {
-            "job_id": str(segmentation_job.id) if segmentation_job else None,
-            "status": segmentation_job.status if segmentation_job else "not_started",
-            "total_items": segmentation_job.total_items if segmentation_job else 0,
-            "processed_items": segmentation_job.processed_items if segmentation_job else 0,
-            "result": segmentation_job.result if segmentation_job else None,
-            "completed_at": segmentation_job.completed_at if segmentation_job else None,
-            "error_message": segmentation_job.error_message if segmentation_job else None
-        } if segmentation_job else None,
-        "behavior_analysis": {
-            "job_id": str(behavior_job.id) if behavior_job else None,
-            "status": behavior_job.status if behavior_job else "not_started",
-            "total_items": behavior_job.total_items if behavior_job else 0,
-            "processed_items": behavior_job.processed_items if behavior_job else 0,
-            "result": behavior_job.result if behavior_job else None,
-            "completed_at": behavior_job.completed_at if behavior_job else None,
-            "error_message": behavior_job.error_message if behavior_job else None
-        } if behavior_job else None
     }

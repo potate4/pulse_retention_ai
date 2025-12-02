@@ -388,7 +388,7 @@ const ROIDashboard = () => {
           </p>
         </div>
       </div>
-    </Layout>
+    </div>
   )
 }
 
