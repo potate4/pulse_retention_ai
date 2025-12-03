@@ -28,6 +28,8 @@ const EmailCampaign = () => {
   const [pagination, setPagination] = useState({ limit: 100, offset: 0, total: 0 })
   const [sendingToCustomer, setSendingToCustomer] = useState(null) // Track which customer is being sent to
   const [generatingEmail, setGeneratingEmail] = useState(false) // Track LLM email generation
+  const [personalizedEmailModal, setPersonalizedEmailModal] = useState({ open: false, customer: null, email: null })
+  const [generatingForCustomer, setGeneratingForCustomer] = useState(null) // Track which customer is generating email
 
   // Load customers on mount and when filter changes
   useEffect(() => {
@@ -194,6 +196,77 @@ The Team`
     }
   }
 
+  const handleGeneratePersonalizedEmailForCustomer = async (customer) => {
+    try {
+      setGeneratingForCustomer(customer.id)
+
+      const result = await churnAPI.generatePersonalizedEmail(
+        user.id,
+        customer.id,
+        parseFloat(customer.churn_score),
+        customer.risk_segment
+      )
+
+      if (result.success) {
+        // Open modal with generated email
+        setPersonalizedEmailModal({
+          open: true,
+          customer: customer,
+          email: {
+            subject: result.subject,
+            html_body: result.html_body,
+            text_body: result.html_body.replace(/<[^>]*>/g, '') // Simple HTML to text conversion
+          }
+        })
+      } else {
+        alert('Failed to generate personalized email. Please ensure OPENAI_API_KEY is set.')
+      }
+    } catch (err) {
+      console.error('Error generating personalized email:', err)
+      alert('Failed to generate personalized email. Please try again.')
+    } finally {
+      setGeneratingForCustomer(null)
+    }
+  }
+
+  const handleSendPersonalizedEmail = async () => {
+    const { customer, email } = personalizedEmailModal
+
+    if (!customer || !email) return
+
+    const confirmed = window.confirm(
+      `Send personalized email to ${customer.id}?\n\nSubject: ${email.subject}\n\nClick OK to send, Cancel to abort.`
+    )
+
+    if (!confirmed) return
+
+    try {
+      setSendingToCustomer(customer.id)
+
+      // Send email with personalized template
+      const result = await sendEmails({
+        subject: email.subject,
+        html_body: email.html_body,
+        text_body: email.text_body,
+        customer_ids: [customer.id],
+        segment_id: null,
+      })
+
+      if (result.success) {
+        alert(`Successfully sent personalized email to ${customer.id}!`)
+        // Close modal
+        setPersonalizedEmailModal({ open: false, customer: null, email: null })
+      } else {
+        alert(`Failed to send email: ${result.message}`)
+      }
+    } catch (error) {
+      console.error('Failed to send email to customer:', error)
+      alert('Failed to send email. Please try again.')
+    } finally {
+      setSendingToCustomer(null)
+    }
+  }
+
   const handleSendEmailToCustomer = async (customerId) => {
     // Use the current email preview or default template
     const template = emailPreview || {
@@ -201,7 +274,7 @@ The Team`
       html_body: `<html><body style="font-family: Arial, sans-serif; padding: 20px;"><h2>Hello Valued Customer,</h2><p>We value your business!</p></body></html>`,
       text_body: "Hello Valued Customer, We value your business!"
     }
-    
+
     const confirmed = window.confirm(
       `Send email to ${customerId}?\n\nSubject: ${template.subject}\n\nClick OK to send, Cancel to abort.`
     )
@@ -210,7 +283,7 @@ The Team`
 
     try {
       setSendingToCustomer(customerId)
-      
+
       // Send email directly with the template
       const result = await sendEmails({
         subject: template.subject,
@@ -219,7 +292,7 @@ The Team`
         customer_ids: [customerId],
         segment_id: null,
       })
-      
+
       if (result.success) {
         alert(`Successfully sent email to ${customerId}!`)
       } else {
@@ -303,7 +376,9 @@ The Team`
                 selectedCustomers={selectedCustomers}
                 onSelectionChange={setSelectedCustomers}
                 onSendEmail={handleSendEmailToCustomer}
+                onGeneratePersonalizedEmail={handleGeneratePersonalizedEmailForCustomer}
                 sendingToCustomer={sendingToCustomer}
+                generatingForCustomer={generatingForCustomer}
                 loading={customersLoading}
               />
             </div>
@@ -411,8 +486,209 @@ The Team`
             </div>
           </div>
         </div>
+
+        {/* Personalized Email Modal */}
+        {personalizedEmailModal.open && (
+          <PersonalizedEmailModal
+            customer={personalizedEmailModal.customer}
+            email={personalizedEmailModal.email}
+            onClose={() => setPersonalizedEmailModal({ open: false, customer: null, email: null })}
+            onSend={handleSendPersonalizedEmail}
+            onEmailChange={(updatedEmail) => {
+              setPersonalizedEmailModal(prev => ({
+                ...prev,
+                email: updatedEmail
+              }))
+            }}
+            sending={sendingToCustomer === personalizedEmailModal.customer?.id}
+          />
+        )}
       </div>
     </Layout>
+  )
+}
+
+/**
+ * PersonalizedEmailModal Component
+ * Modal to preview and edit personalized email before sending
+ */
+const PersonalizedEmailModal = ({
+  customer,
+  email,
+  onClose,
+  onSend,
+  onEmailChange,
+  sending
+}) => {
+  const [isEditing, setIsEditing] = useState(false)
+  const [editedSubject, setEditedSubject] = useState(email?.subject || '')
+  const [editedHtmlBody, setEditedHtmlBody] = useState(email?.html_body || '')
+
+  // Update local state when email prop changes
+  React.useEffect(() => {
+    if (email) {
+      setEditedSubject(email.subject)
+      setEditedHtmlBody(email.html_body)
+    }
+  }, [email])
+
+  const handleSave = () => {
+    onEmailChange({
+      subject: editedSubject,
+      html_body: editedHtmlBody,
+      text_body: editedHtmlBody.replace(/<[^>]*>/g, '')
+    })
+    setIsEditing(false)
+  }
+
+  const handleCancel = () => {
+    // Reset to original values
+    setEditedSubject(email?.subject || '')
+    setEditedHtmlBody(email?.html_body || '')
+    setIsEditing(false)
+  }
+
+  if (!customer || !email) return null
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+              Personalized Email for {customer.id}
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Risk: <span className={`font-semibold ${
+                customer.risk_segment === 'Critical' ? 'text-red-600' :
+                customer.risk_segment === 'High' ? 'text-orange-600' :
+                customer.risk_segment === 'Medium' ? 'text-yellow-600' :
+                'text-green-600'
+              }`}>{customer.risk_segment}</span> • Churn Probability: {(customer.churn_score * 100).toFixed(1)}%
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {isEditing ? (
+            <div className="space-y-4">
+              {/* Subject Editor */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Subject
+                </label>
+                <input
+                  type="text"
+                  value={editedSubject}
+                  onChange={(e) => setEditedSubject(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
+                    bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                    focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* HTML Body Editor */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Email Body (HTML)
+                </label>
+                <textarea
+                  value={editedHtmlBody}
+                  onChange={(e) => setEditedHtmlBody(e.target.value)}
+                  rows={15}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
+                    bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm
+                    focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Subject Preview */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Subject
+                </label>
+                <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                  <p className="text-gray-900 dark:text-white font-medium">{editedSubject}</p>
+                </div>
+              </div>
+
+              {/* HTML Body Preview */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Email Preview
+                </label>
+                <div className="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
+                  <div
+                    className="p-6 bg-white"
+                    dangerouslySetInnerHTML={{ __html: editedHtmlBody }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <div>
+            {!isEditing && (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="px-4 py-2 text-purple-600 hover:text-purple-700 font-medium"
+              >
+                Edit Email
+              </button>
+            )}
+          </div>
+          <div className="flex gap-3">
+            {isEditing ? (
+              <>
+                <button
+                  onClick={handleCancel}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                >
+                  Save Changes
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={onClose}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={onSend}
+                  disabled={sending}
+                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium"
+                >
+                  {sending ? 'Sending...' : 'Send Email'}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -420,13 +696,15 @@ The Team`
  * PredictionCustomerTable Component
  * Displays prediction customers with risk segment, churn probability, and send email button
  */
-const PredictionCustomerTable = ({ 
-  customers, 
-  selectedCustomers, 
-  onSelectionChange, 
+const PredictionCustomerTable = ({
+  customers,
+  selectedCustomers,
+  onSelectionChange,
   onSendEmail,
+  onGeneratePersonalizedEmail,
   sendingToCustomer,
-  loading 
+  generatingForCustomer,
+  loading
 }) => {
   const handleSelectAll = (e) => {
     if (e.target.checked) {
@@ -542,13 +820,23 @@ const PredictionCustomerTable = ({
                 {customer.batch_name || 'N/A'}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm">
-                <button
-                  onClick={() => onSendEmail(customer.id)}
-                  disabled={sendingToCustomer === customer.id}
-                  className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-xs font-medium transition-colors"
-                >
-                  {sendingToCustomer === customer.id ? 'Sending...' : 'Send Email'}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => onGeneratePersonalizedEmail(customer)}
+                    disabled={generatingForCustomer === customer.id}
+                    className="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-xs font-medium transition-colors"
+                    title="Generate AI-powered personalized email"
+                  >
+                    {generatingForCustomer === customer.id ? 'Generating...' : 'Generate Personalized Reply'}
+                  </button>
+                  <button
+                    onClick={() => onSendEmail(customer.id)}
+                    disabled={sendingToCustomer === customer.id}
+                    className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-xs font-medium transition-colors"
+                  >
+                    {sendingToCustomer === customer.id ? 'Sending...' : 'Send Email'}
+                  </button>
+                </div>
               </td>
             </tr>
           ))}
