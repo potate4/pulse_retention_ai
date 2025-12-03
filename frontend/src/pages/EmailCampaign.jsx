@@ -27,6 +27,7 @@ const EmailCampaign = () => {
   const [riskSegmentFilter, setRiskSegmentFilter] = useState('All')
   const [pagination, setPagination] = useState({ limit: 100, offset: 0, total: 0 })
   const [sendingToCustomer, setSendingToCustomer] = useState(null) // Track which customer is being sent to
+  const [generatingEmail, setGeneratingEmail] = useState(false) // Track LLM email generation
 
   // Load customers on mount and when filter changes
   useEffect(() => {
@@ -107,10 +108,53 @@ If you have any questions or concerns, please don't hesitate to reach out to us.
 Best regards,
 The Team`
     }
-    
+
     setEmailPreview(defaultTemplate)
     setShowPreview(true)
     setSendResult(null)
+  }
+
+  const handleGeneratePersonalizedEmail = async () => {
+    if (selectedCustomers.length === 0) {
+      alert('Please select at least one customer to generate personalized email')
+      return
+    }
+
+    // Use the first selected customer for personalization
+    const firstCustomer = customers.find(c => c.id === selectedCustomers[0])
+    if (!firstCustomer) {
+      alert('Customer not found')
+      return
+    }
+
+    try {
+      setGeneratingEmail(true)
+
+      const result = await churnAPI.generatePersonalizedEmail(
+        user.id,
+        firstCustomer.id,
+        parseFloat(firstCustomer.churn_score),
+        firstCustomer.risk_segment
+      )
+
+      if (result.success) {
+        // Update email preview with generated content
+        setEmailPreview({
+          subject: result.subject,
+          html_body: result.html_body,
+          text_body: result.html_body.replace(/<[^>]*>/g, '') // Simple HTML to text conversion
+        })
+        setShowPreview(true)
+        setSendResult(null)
+      } else {
+        alert('Failed to generate personalized email. Please ensure OPENAI_API_KEY is set.')
+      }
+    } catch (err) {
+      console.error('Error generating personalized email:', err)
+      alert('Failed to generate personalized email. Please try again.')
+    } finally {
+      setGeneratingEmail(false)
+    }
   }
 
   const handleSendEmails = async () => {

@@ -950,3 +950,61 @@ async def get_prediction_customers(
         "offset": offset,
         "customers": customers
     }
+
+
+@router.post("/organizations/{org_id}/customers/{customer_id}/analyze-churn-reason")
+async def analyze_customer_churn_reason(
+    org_id: uuid.UUID,
+    customer_id: str,
+    churn_probability: float,
+    risk_level: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Use LLM to analyze WHY a customer has their churn risk based on transaction patterns.
+
+    Args:
+        org_id: Organization UUID
+        customer_id: External customer ID
+        churn_probability: Churn probability (0-1)
+        risk_level: Risk level (Low/Medium/High/Critical)
+
+    Returns:
+        {
+            "success": bool,
+            "analysis": str,
+            "key_patterns": [str],
+            "retention_tips": [str]
+        }
+    """
+    from app.services.behavior_analysis.llm_suggestions import analyze_churn_reason
+
+    get_organization(org_id, db)
+
+    try:
+        result = analyze_churn_reason(
+            customer_id=customer_id,
+            organization_id=str(org_id),
+            churn_probability=churn_probability,
+            risk_level=risk_level,
+            db=db
+        )
+
+        if result:
+            return {
+                "success": True,
+                **result
+            }
+        else:
+            return {
+                "success": False,
+                "analysis": "Unable to generate analysis. Please ensure OPENAI_API_KEY is set.",
+                "key_patterns": [],
+                "retention_tips": []
+            }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error analyzing churn reason: {str(e)}"
+        )
+

@@ -331,7 +331,7 @@ const ROIDashboard = () => {
           that can be saved through retention efforts.
         </p>
       </div>
-    </div>
+    </Layout>
   )
 }
 
