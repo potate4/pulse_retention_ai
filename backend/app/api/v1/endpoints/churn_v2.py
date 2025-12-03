@@ -1008,3 +1008,74 @@ async def analyze_customer_churn_reason(
             detail=f"Error analyzing churn reason: {str(e)}"
         )
 
+
+@router.post("/organizations/{org_id}/customers/{customer_id}/generate-personalized-email")
+async def generate_customer_personalized_email(
+    org_id: uuid.UUID,
+    customer_id: str,
+    churn_probability: float,
+    risk_level: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Use LLM to generate personalized retention email HTML based on customer data.
+
+    Args:
+        org_id: Organization UUID
+        customer_id: External customer ID
+        churn_probability: Churn probability (0-1)
+        risk_level: Risk level (Low/Medium/High/Critical)
+
+    Returns:
+        {
+            "success": bool,
+            "subject": str,
+            "html_body": str
+        }
+    """
+    from app.services.behavior_analysis.llm_suggestions import generate_personalized_email
+
+    get_organization(org_id, db)
+
+    try:
+        result = generate_personalized_email(
+            customer_id=customer_id,
+            organization_id=str(org_id),
+            churn_probability=churn_probability,
+            risk_level=risk_level,
+            db=db
+        )
+
+        if result and "subject" in result and "html_body" in result:
+            return {
+                "success": True,
+                "subject": result["subject"],
+                "html_body": result["html_body"]
+            }
+        else:
+            # Return default template if LLM fails
+            return {
+                "success": False,
+                "subject": "We'd Love to Have You Back!",
+                "html_body": """<html>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h2 style="color: #2c3e50;">Hello Valued Customer,</h2>
+    <p>We noticed you haven't been with us lately, and we wanted to reach out to see how we can help.</p>
+    <p>We value your business and would love to have you back. As a token of our appreciation, we're offering you a special discount on your next purchase.</p>
+    <div style="text-align: center; margin: 30px 0;">
+        <a href="#" style="background-color: #3498db; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">Claim Your Offer</a>
+    </div>
+    <p>If you have any questions or concerns, please don't hesitate to reach out to us. We're here to help!</p>
+    <p style="color: #7f8c8d; font-size: 14px; margin-top: 30px;">
+        Best regards,<br>
+        The Team
+    </p>
+</body>
+</html>""",
+                "message": "Unable to generate personalized email. Please ensure OPENAI_API_KEY is set."
+            }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error generating personalized email: {str(e)}"
+        )
