@@ -14,9 +14,8 @@ const Analytics = () => {
   const [error, setError] = useState(null)
   const [metrics, setMetrics] = useState(null)
   const [churnData, setChurnData] = useState(null)
-  const [segments, setSegments] = useState(null)
-  const [churnReasons, setChurnReasons] = useState(null)
   const [riskData, setRiskData] = useState(null)
+  const [valueData, setValueData] = useState(null)
 
   // Fetch analytics data from backend
   useEffect(() => {
@@ -26,16 +25,15 @@ const Analytics = () => {
         setError(null)
 
         // Fetch all analytics data in parallel
-        const [metricsData, churnTrendData, segmentsData, reasonsData, riskDistData] = await Promise.all([
+        const [metricsData, churnTrendData, riskDistData, valueDistData] = await Promise.all([
           analyticsAPI.getMetrics(),
           analyticsAPI.getChurnTrend(),
-          analyticsAPI.getSegmentsDistribution(),
-          analyticsAPI.getChurnReasons(),
-          analyticsAPI.getRiskDistribution()
+          analyticsAPI.getRiskDistribution(),
+          analyticsAPI.getValueDistribution()
         ])
 
         setMetrics(metricsData)
-        
+
         // Transform churn trend data for display
         setChurnData(churnTrendData.map(item => ({
           month: item.month,
@@ -43,22 +41,14 @@ const Analytics = () => {
           retention: item.retentionRate
         })))
 
-        // Transform segments data with colors
-        setSegments(segmentsData.map((seg, idx) => ({
-          ...seg,
-          name: seg.name,
-          count: seg.value,
-          color: ['#4f46e5', '#06b6d4', '#10b981', '#ef4444', '#f59e0b'][idx % 5]
+        // Transform risk data for display with colors
+        setRiskData(riskDistData.map((item, idx) => ({
+          name: item.name,
+          count: item.value,
+          color: ['#10b981', '#f59e0b', '#ef4444', '#991b1b'][idx % 4]
         })))
 
-        setChurnReasons(reasonsData)
-        
-        // Transform risk data for display
-        setRiskData(riskDistData.map(item => ({
-          range: item.name,
-          count: item.value,
-          percentage: Math.round((item.value / riskDistData.reduce((sum, r) => sum + r.value, 0)) * 100)
-        })))
+        setValueData(valueDistData)
 
         setLoading(false)
       } catch (err) {
@@ -285,11 +275,11 @@ const Analytics = () => {
               icon={<span className="text-2xl">💰</span>}
             />
             <MetricCard
-              title="Emails Sent"
-              value={metrics.emailsSent.toLocaleString()}
-              subtitle="Total campaigns"
+              title="Total Batches"
+              value={metrics.total_batches || 0}
+              subtitle="Prediction batches analyzed"
               color="#8b5cf6"
-              icon={<span className="text-2xl">📧</span>}
+              icon={<span className="text-2xl">📊</span>}
             />
           </div>
         )}
@@ -308,38 +298,52 @@ const Analytics = () => {
             />
           )}
 
-          {/* Segment Distribution */}
-          {segments && (
-            <PieChart
-              data={segments}
-              title="Customer Segment Distribution"
-            />
-          )}
-
-          {/* Churn Reasons */}
-          {churnReasons && (
-            <SimpleBarChart
-              data={churnReasons}
-              title="Top Churn Reasons"
-              dataKey="count"
-            />
-          )}
-
           {/* Risk Distribution */}
           {riskData && (
-            <SimpleBarChart
+            <PieChart
               data={riskData}
               title="Customer Risk Distribution"
+            />
+          )}
+
+          {/* Value Distribution */}
+          {valueData && (
+            <SimpleBarChart
+              data={valueData}
+              title="Customer Value Distribution"
               dataKey="count"
             />
           )}
         </div>
 
+        {/* No Data Message */}
+        {metrics && metrics.total_batches === 0 && (
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">ℹ️</span>
+              <div>
+                <h3 className="font-semibold text-yellow-900 dark:text-yellow-200 mb-2">
+                  No Prediction Data Available
+                </h3>
+                <p className="text-sm text-yellow-800 dark:text-yellow-300 mb-3">
+                  Upload prediction data to see analytics and customer insights.
+                </p>
+                <button
+                  onClick={() => navigate('/predictions')}
+                  className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition text-sm font-medium"
+                >
+                  Go to Predictions
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Data Source Info */}
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-700 rounded-lg p-4">
           <p className="text-sm text-blue-900 dark:text-blue-200">
-            <strong>ℹ️ Real Data:</strong> This page is displaying live data from the backend API. 
-            All metrics, trends, and distributions are fetched from the analytics endpoints.
+            <strong>ℹ️ Real Data:</strong> Analytics are calculated from real prediction batches.
+            Churn rate is based on customers with &gt;50% churn probability, and values are from RFM monetary analysis.
           </p>
         </div>
       </div>

@@ -34,6 +34,11 @@ export default function Predictions() {
   const [predictions, setPredictions] = useState([]);
   const [predictionsPagination, setPredictionsPagination] = useState({ limit: 10, offset: 0, total: 0 });
 
+  // LLM Analysis state
+  const [expandedRow, setExpandedRow] = useState(null);
+  const [analysisData, setAnalysisData] = useState({});
+  const [loadingAnalysis, setLoadingAnalysis] = useState({});
+
   // Polling
   const batchPollingInterval = useRef(null);
 
@@ -223,6 +228,42 @@ export default function Predictions() {
   const handlePredictionPrevPage = () => {
     const prevOffset = Math.max(0, predictionsPagination.offset - predictionsPagination.limit);
     loadBatchPredictions(selectedBatch, predictionsPagination.limit, prevOffset);
+  };
+
+  // Handle LLM analysis toggle
+  const handleAnalyzeChurn = async (customerId, churnProbability, riskLevel) => {
+    // If row is already expanded, just collapse it
+    if (expandedRow === customerId) {
+      setExpandedRow(null);
+      return;
+    }
+
+    // If we already have the analysis, just expand the row
+    if (analysisData[customerId]) {
+      setExpandedRow(customerId);
+      return;
+    }
+
+    // Otherwise, fetch new analysis
+    setLoadingAnalysis(prev => ({ ...prev, [customerId]: true }));
+    setExpandedRow(customerId);
+
+    try {
+      const result = await churnAPI.analyzeChurnReason(
+        user.id,
+        customerId,
+        churnProbability,
+        riskLevel
+      );
+
+      setAnalysisData(prev => ({ ...prev, [customerId]: result }));
+    } catch (err) {
+      console.error('Error analyzing churn reason:', err);
+      setError('Failed to analyze churn reason');
+      setExpandedRow(null);
+    } finally {
+      setLoadingAnalysis(prev => ({ ...prev, [customerId]: false }));
+    }
   };
 
   return (
@@ -490,44 +531,119 @@ export default function Predictions() {
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                               Predicted At
                             </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                              Actions
+                            </th>
                           </tr>
                         </thead>
                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                           {predictions.map((pred, idx) => (
-                            <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                {pred.customer_id}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                                <div className="flex items-center">
-                                  <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-2">
-                                    <div
-                                      className={`h-2 rounded-full ${
-                                        parseFloat(pred.churn_probability) > 0.7 ? 'bg-red-600' :
-                                        parseFloat(pred.churn_probability) > 0.5 ? 'bg-orange-500' :
-                                        parseFloat(pred.churn_probability) > 0.3 ? 'bg-yellow-500' :
-                                        'bg-green-500'
-                                      }`}
-                                      style={{ width: `${parseFloat(pred.churn_probability) * 100}%` }}
-                                    ></div>
+                            <>
+                              <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                  {pred.customer_id}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                                  <div className="flex items-center">
+                                    <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-2">
+                                      <div
+                                        className={`h-2 rounded-full ${
+                                          parseFloat(pred.churn_probability) > 0.7 ? 'bg-red-600' :
+                                          parseFloat(pred.churn_probability) > 0.5 ? 'bg-orange-500' :
+                                          parseFloat(pred.churn_probability) > 0.3 ? 'bg-yellow-500' :
+                                          'bg-green-500'
+                                        }`}
+                                        style={{ width: `${parseFloat(pred.churn_probability) * 100}%` }}
+                                      ></div>
+                                    </div>
+                                    {(parseFloat(pred.churn_probability) * 100).toFixed(1)}%
                                   </div>
-                                  {(parseFloat(pred.churn_probability) * 100).toFixed(1)}%
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`px-2 py-1 text-xs font-semibold rounded ${
-                                  pred.risk_segment === 'Low' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
-                                  pred.risk_segment === 'Medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                                  pred.risk_segment === 'High' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400' :
-                                  'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                                }`}>
-                                  {pred.risk_segment}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                                {new Date(pred.predicted_at).toLocaleString()}
-                              </td>
-                            </tr>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className={`px-2 py-1 text-xs font-semibold rounded ${
+                                    pred.risk_segment === 'Low' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                                    pred.risk_segment === 'Medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                                    pred.risk_segment === 'High' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400' :
+                                    'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                                  }`}>
+                                    {pred.risk_segment}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                                  {new Date(pred.predicted_at).toLocaleString()}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                  <button
+                                    onClick={() => handleAnalyzeChurn(
+                                      pred.customer_id,
+                                      parseFloat(pred.churn_probability),
+                                      pred.risk_segment
+                                    )}
+                                    disabled={loadingAnalysis[pred.customer_id]}
+                                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded text-xs font-medium transition-colors"
+                                  >
+                                    {loadingAnalysis[pred.customer_id] ? '...' :
+                                     expandedRow === pred.customer_id ? 'Hide' : '🔍 Analyze'}
+                                  </button>
+                                </td>
+                              </tr>
+
+                              {/* Expandable Analysis Row */}
+                              {expandedRow === pred.customer_id && (
+                                <tr key={`${idx}-expanded`} className="bg-blue-50 dark:bg-blue-900/20">
+                                  <td colSpan="5" className="px-6 py-4">
+                                    {loadingAnalysis[pred.customer_id] ? (
+                                      <div className="flex items-center justify-center py-8">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
+                                        <span className="text-gray-600 dark:text-gray-400">Analyzing churn patterns...</span>
+                                      </div>
+                                    ) : analysisData[pred.customer_id] ? (
+                                      <div className="space-y-4">
+                                        <div className="flex items-start">
+                                          <span className="text-2xl mr-3">🤖</span>
+                                          <div className="flex-1">
+                                            <h4 className="font-bold text-gray-900 dark:text-white mb-2">AI Analysis:</h4>
+                                            <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
+                                              {analysisData[pred.customer_id].analysis}
+                                            </p>
+                                          </div>
+                                        </div>
+
+                                        {analysisData[pred.customer_id].key_patterns && analysisData[pred.customer_id].key_patterns.length > 0 && (
+                                          <div className="flex items-start">
+                                            <span className="text-2xl mr-3">📊</span>
+                                            <div className="flex-1">
+                                              <h4 className="font-bold text-gray-900 dark:text-white mb-2">Key Patterns:</h4>
+                                              <ul className="list-disc list-inside space-y-1">
+                                                {analysisData[pred.customer_id].key_patterns.map((pattern, i) => (
+                                                  <li key={i} className="text-gray-700 dark:text-gray-300 text-sm">{pattern}</li>
+                                                ))}
+                                              </ul>
+                                            </div>
+                                          </div>
+                                        )}
+
+                                        {analysisData[pred.customer_id].retention_tips && analysisData[pred.customer_id].retention_tips.length > 0 && (
+                                          <div className="flex items-start">
+                                            <span className="text-2xl mr-3">💡</span>
+                                            <div className="flex-1">
+                                              <h4 className="font-bold text-gray-900 dark:text-white mb-2">Retention Recommendations:</h4>
+                                              <ul className="list-disc list-inside space-y-1">
+                                                {analysisData[pred.customer_id].retention_tips.map((tip, i) => (
+                                                  <li key={i} className="text-gray-700 dark:text-gray-300 text-sm">{tip}</li>
+                                                ))}
+                                              </ul>
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <p className="text-center text-gray-500 dark:text-gray-400 py-4">No analysis available</p>
+                                    )}
+                                  </td>
+                                </tr>
+                              )}
+                            </>
                           ))}
                         </tbody>
                       </table>

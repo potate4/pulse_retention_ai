@@ -7,11 +7,11 @@ app = FastAPI()
 app.include_router(api_router_v1, prefix="/api/v1") 
 
 origins = [
-    # "*"
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "https://shrobon-audio.web.app",
-    "https://audio.shrobon.com",
+    "*",  # Allow all origins for widget to work (development mode)
+    # "http://localhost:5173",
+    # "http://localhost:5174",
+    # "https://shrobon-audio.web.app",
+    # "https://audio.shrobon.com",
 ]
 
 allow_credentials = True

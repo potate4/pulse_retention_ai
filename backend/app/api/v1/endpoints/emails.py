@@ -105,20 +105,23 @@ async def generate_email(
         Email template with subject and body
     """
     try:
-        # Validate input
-        if not request.customer_ids and not request.segment_id:
+        # Validate input - check if customer_ids has values or segment_id is provided
+        has_customer_ids = request.customer_ids is not None and len(request.customer_ids) > 0
+        has_segment_id = request.segment_id is not None and request.segment_id != ""
+        
+        if not has_customer_ids and not has_segment_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Either customer_ids or segment_id must be provided"
+                detail="Either customer_ids (with at least one ID) or segment_id must be provided"
             )
         
         org_id = current_user.id  # User ID equals organization ID
         # Generate email preview
         email = await EmailService.generate_email_preview(
-            customer_ids=request.customer_ids,
+            customer_ids=request.customer_ids or [],
             segment_id=request.segment_id,
             organization_id=org_id,
-            extra_params=request.extra_params
+            extra_params=request.extra_params or {}
         )
         
         return email
@@ -162,6 +165,11 @@ async def send_emails(
             )
         
         org_id = current_user.id  # User ID equals organization ID
+        
+        print(f"[DEBUG] Sending emails to {len(request.customer_ids)} customers")
+        print(f"[DEBUG] Organization ID: {org_id}")
+        print(f"[DEBUG] Customer IDs: {request.customer_ids}")
+        
         # Send emails
         result = await EmailService.send_emails(
             subject=request.subject,
@@ -174,7 +182,12 @@ async def send_emails(
         
         return result
         
+    except HTTPException:
+        raise
     except Exception as e:
+        import traceback
+        print(f"[ERROR] Failed to send emails: {str(e)}")
+        print(f"[ERROR] Traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to send emails: {str(e)}"

@@ -22,7 +22,7 @@ export default function ChurnPrediction() {
 
   // Step 1: Upload dataset
   const [uploadFile, setUploadFile] = useState(null);
-  const [hasChurnLabel, setHasChurnLabel] = useState(false);
+  const [hasChurnLabel] = useState(true); // Always use enhanced features (V2)
   const [uploadLoading, setUploadLoading] = useState(false);
   const [datasetId, setDatasetId] = useState(null);
   const [datasetInfo, setDatasetInfo] = useState(null);
@@ -32,7 +32,7 @@ export default function ChurnPrediction() {
   const [featuresPolling, setFeaturesPolling] = useState(false);
 
   // Step 3: Model training
-  const [modelType, setModelType] = useState('logistic_regression');
+  const [modelType] = useState('logistic_regression'); // Always use logistic regression
   const [trainingStatus, setTrainingStatus] = useState(null);
   const [trainingPolling, setTrainingPolling] = useState(false);
   const [modelMetrics, setModelMetrics] = useState(null);
@@ -472,7 +472,7 @@ export default function ChurnPrediction() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Churn Prediction v2
+            Churn Prediction
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
             Upload customer data, train models, and predict churn risk
@@ -540,15 +540,22 @@ export default function ChurnPrediction() {
             </h2>
             <div className="mb-6">
               <p className="text-gray-600 dark:text-gray-400 mb-2">
-                Upload a CSV file with customer transaction data. Required columns:
-                <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded mx-1">customer_id</code>,
-                <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded mx-1">event_date</code>
+                Upload a CSV file with customer transaction data in the following format:
               </p>
-              <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded">
-                <p className="text-sm text-yellow-800 dark:text-yellow-300">
-                  <strong>⚠️ Important:</strong> If your CSV does NOT have a <code className="bg-yellow-100 dark:bg-yellow-800 px-1 rounded">churn_label</code> column,
-                  you MUST check the checkbox below anyway to enable V2 features. The system will auto-generate churn labels based on customer recency.
-                </p>
+              <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded-lg border border-gray-300 dark:border-gray-600 mb-3">
+                <code className="text-sm text-gray-800 dark:text-gray-200 font-mono">
+                  customer_id,event_date,amount,event_type,churn_label
+                </code>
+              </div>
+              <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
+                <p><strong>Required columns:</strong></p>
+                <ul className="list-disc list-inside ml-2 space-y-1">
+                  <li><code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">customer_id</code> - Unique customer identifier</li>
+                  <li><code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">event_date</code> - Transaction/event date (YYYY-MM-DD)</li>
+                  <li><code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">amount</code> - Transaction amount (optional, can be empty)</li>
+                  <li><code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">event_type</code> - Type of event (optional, can be empty)</li>
+                  <li><code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">churn_label</code> - 0 or 1 (optional - will be auto-generated if empty)</li>
+                </ul>
               </div>
             </div>
 
@@ -575,22 +582,6 @@ export default function ChurnPrediction() {
                     ✓ Selected: {uploadFile.name}
                   </p>
                 )}
-              </div>
-
-              <div className="flex items-center p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded">
-                <input
-                  type="checkbox"
-                  id="hasChurnLabel"
-                  checked={hasChurnLabel}
-                  onChange={(e) => setHasChurnLabel(e.target.checked)}
-                  className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
-                />
-                <label htmlFor="hasChurnLabel" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
-                  <strong>Check this to use V2 Enhanced Features</strong>
-                  <span className="block text-xs text-gray-600 dark:text-gray-400 mt-1">
-                    (Required for optimal model performance. Labels will be auto-generated if not in CSV)
-                  </span>
-                </label>
               </div>
 
               <Button
@@ -663,26 +654,15 @@ export default function ChurnPrediction() {
               Step 3: Train Churn Prediction Model
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Select a model type and start training
+              Train the model to predict customer churn using advanced machine learning
             </p>
 
             {!trainingPolling && !modelMetrics && (
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Model Type
-                  </label>
-                  <select
-                    value={modelType}
-                    onChange={(e) => setModelType(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
-                      bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                      focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="logistic_regression">Logistic Regression (Fast, Interpretable)</option>
-                    <option value="random_forest">Random Forest (Balanced, Robust)</option>
-                    <option value="gradient_boosting">Gradient Boosting (High Accuracy)</option>
-                  </select>
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm text-blue-800 dark:text-blue-300">
+                    <strong>🤖 Auto-Optimized Training:</strong> Using enhanced V2 features with automatic model selection and hyperparameter tuning for best accuracy.
+                  </p>
                 </div>
 
                 <Button onClick={handleTrainModel} className="w-full">
