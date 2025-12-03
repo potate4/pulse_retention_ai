@@ -32,7 +32,7 @@ export default function ChurnPrediction() {
   const [featuresPolling, setFeaturesPolling] = useState(false);
 
   // Step 3: Model training
-  const [modelType, setModelType] = useState('logistic_regression');
+  const [modelType] = useState('logistic_regression'); // Always use logistic regression
   const [trainingStatus, setTrainingStatus] = useState(null);
   const [trainingPolling, setTrainingPolling] = useState(false);
   const [modelMetrics, setModelMetrics] = useState(null);
@@ -654,26 +654,15 @@ export default function ChurnPrediction() {
               Step 3: Train Churn Prediction Model
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Select a model type and start training
+              Train the model to predict customer churn using advanced machine learning
             </p>
 
             {!trainingPolling && !modelMetrics && (
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Model Type
-                  </label>
-                  <select
-                    value={modelType}
-                    onChange={(e) => setModelType(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
-                      bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                      focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="logistic_regression">Logistic Regression (Fast, Interpretable)</option>
-                    <option value="random_forest">Random Forest (Balanced, Robust)</option>
-                    <option value="gradient_boosting">Gradient Boosting (High Accuracy)</option>
-                  </select>
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm text-blue-800 dark:text-blue-300">
+                    <strong>🤖 Auto-Optimized Training:</strong> Using enhanced V2 features with automatic model selection and hyperparameter tuning for best accuracy.
+                  </p>
                 </div>
 
                 <Button onClick={handleTrainModel} className="w-full">
