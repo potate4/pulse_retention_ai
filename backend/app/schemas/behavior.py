@@ -9,7 +9,7 @@ from uuid import UUID
 
 class BehaviorAnalysisResponse(BaseModel):
     """Response schema for customer behavior analysis."""
-    customer_id: UUID
+    customer_id: str  # External customer ID (string)
     organization_id: UUID
     org_type: str
     behavior_score: float
@@ -19,7 +19,7 @@ class BehaviorAnalysisResponse(BaseModel):
     risk_signals: List[str]
     recommendations: List[str]
     analyzed_at: Optional[datetime] = None
-    extra_data: Optional[Dict[str, Any]] = None
+    metadata: Optional[Dict[str, Any]] = None  # Changed from extra_data to match model
 
 
 class BatchBehaviorAnalysisResponse(BaseModel):

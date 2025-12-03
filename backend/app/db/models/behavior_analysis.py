@@ -22,7 +22,7 @@ class BehaviorAnalysis(Base):
     __tablename__ = "behavior_analysis"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    customer_id = Column(UUID(as_uuid=True), ForeignKey("customers.id", ondelete="CASCADE"), nullable=False, index=True)
+    customer_id = Column(String, nullable=False, index=True)  # Now stores external_customer_id as string
     organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
 
     # Organization type for context
@@ -50,5 +50,4 @@ class BehaviorAnalysis(Base):
     extra_data = Column(JSONB, nullable=True)  # Industry-specific metrics
 
     # Relationships
-    customer = relationship("Customer", backref="behavior_analysis")
     organization = relationship("Organization", backref="behavior_analyses")

@@ -47,6 +47,17 @@ export default function ChurnPrediction() {
   const [predictions, setPredictions] = useState([]);
   const [predictionsPagination, setPredictionsPagination] = useState({ limit: 10, offset: 0 });
 
+  // Step 5: Segmentation
+  const [segmentationStatus, setSegmentationStatus] = useState(null);
+  const [segmentationResults, setSegmentationResults] = useState(null);
+  const [segmentationLoading, setSegmentationLoading] = useState(false);
+
+  // Step 6: Behavior Analysis
+  const [behaviorStatus, setBehaviorStatus] = useState(null);
+  const [behaviorResults, setBehaviorResults] = useState(null);
+  const [behaviorLoading, setBehaviorLoading] = useState(false);
+  const [behaviorLimit, setBehaviorLimit] = useState('');
+
   // Error handling
   const [error, setError] = useState(null);
 
@@ -310,6 +321,9 @@ export default function ChurnPrediction() {
 
           // Load predictions for this batch
           loadBatchPredictions(batchId);
+          
+          // Move to step 5 (segmentation)
+          setCurrentStep(5);
         } else if (batchData.status === 'failed') {
           clearInterval(batchPollingInterval.current);
           setError(batchData.error_message || 'Batch prediction failed');
@@ -355,6 +369,64 @@ export default function ChurnPrediction() {
   };
 
   // ============================================================================
+  // STEP 5: SEGMENTATION
+  // ============================================================================
+
+  const handleSegmentCustomers = async (batchId = selectedBatch) => {
+    setSegmentationLoading(true);
+    setSegmentationStatus('processing');
+    setError(null);
+
+    try {
+      const response = await churnAPI.segmentCustomers(user.id, batchId);
+
+      if (response.success) {
+        setSegmentationStatus('completed');
+        setSegmentationResults(response);
+
+        // Move to step 6 (behavior analysis)
+        setCurrentStep(6);
+      } else {
+        setSegmentationStatus('failed');
+        setError('Segmentation failed');
+      }
+    } catch (err) {
+      setSegmentationStatus('failed');
+      setError(err.response?.data?.detail || 'Error segmenting customers');
+    } finally {
+      setSegmentationLoading(false);
+    }
+  };
+
+  // ============================================================================
+  // STEP 6: BEHAVIOR ANALYSIS
+  // ============================================================================
+
+  const handleAnalyzeBehaviors = async () => {
+    setBehaviorLoading(true);
+    setBehaviorStatus('processing');
+    setError(null);
+
+    try {
+      const limit = behaviorLimit ? parseInt(behaviorLimit) : null;
+      const response = await churnAPI.analyzeBehaviors(user.id, limit);
+
+      if (response.success) {
+        setBehaviorStatus('completed');
+        setBehaviorResults(response);
+      } else {
+        setBehaviorStatus('failed');
+        setError('Behavior analysis failed');
+      }
+    } catch (err) {
+      setBehaviorStatus('failed');
+      setError(err.response?.data?.detail || 'Error analyzing behaviors');
+    } finally {
+      setBehaviorLoading(false);
+    }
+  };
+
+  // ============================================================================
   // CLEANUP
   // ============================================================================
 
@@ -362,6 +434,18 @@ export default function ChurnPrediction() {
     // Load batches on mount if we're on step 4
     if (currentStep === 4) {
       loadBatches();
+    }
+    
+    // Auto-start segmentation when entering step 5
+    if (currentStep === 5 && !segmentationLoading && !segmentationResults) {
+      handleSegmentCustomers(selectedBatch);
+    }
+    
+    // Don't auto-start behavior analysis - let user set limit first
+    
+    // Load predictions when entering step 6 (for the table)
+    if (currentStep === 6 && selectedBatch && predictions.length === 0) {
+      loadBatchPredictions(selectedBatch);
     }
 
     // Cleanup intervals on unmount
@@ -408,7 +492,7 @@ export default function ChurnPrediction() {
       {/* Step Indicator */}
       <div className="mb-8">
         <div className="flex items-center justify-between">
-          {[1, 2, 3, 4].map((step) => (
+          {[1, 2, 3, 4, 5, 6].map((step) => (
             <div key={step} className="flex items-center flex-1">
               <div className="flex items-center">
                 <div
@@ -423,17 +507,19 @@ export default function ChurnPrediction() {
                   {step < currentStep ? '✓' : step}
                 </div>
                 <div className="ml-3">
-                  <div className={`font-medium ${
+                  <div className={`font-medium text-sm ${
                     step <= currentStep ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-500'
                   }`}>
-                    {step === 1 && 'Upload Dataset'}
-                    {step === 2 && 'Process Features'}
-                    {step === 3 && 'Train Model'}
-                    {step === 4 && 'Predictions'}
+                    {step === 1 && 'Upload'}
+                    {step === 2 && 'Features'}
+                    {step === 3 && 'Train'}
+                    {step === 4 && 'Predict'}
+                    {step === 5 && 'Segment'}
+                    {step === 6 && 'Analyze'}
                   </div>
                 </div>
               </div>
-              {step < 4 && (
+              {step < 6 && (
                 <div className={`flex-1 h-1 mx-4 ${
                   step < currentStep ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-700'
                 }`} />
@@ -681,11 +767,14 @@ export default function ChurnPrediction() {
             <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
               Step 4: Generate Predictions
             </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Upload customer data CSV for bulk churn prediction
+            </p>
 
             {/* Upload new prediction batch */}
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-lg mb-6">
               <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-                Upload New Batch
+                Upload Prediction Batch
               </h3>
               <div className="space-y-4">
                 <div>
@@ -729,135 +818,213 @@ export default function ChurnPrediction() {
                   disabled={!predictionFile || predictionLoading}
                   className="w-full"
                 >
-                  {predictionLoading ? 'Processing...' : 'Generate Predictions'}
+                  {predictionLoading ? 'Uploading...' : 'Generate Predictions'}
                 </Button>
               </div>
             </div>
 
-            {/* Existing batches */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-                Previous Prediction Batches
-              </h3>
-
-              {batches.length === 0 ? (
-                <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-                  No prediction batches yet. Upload a CSV to get started.
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {batches.map((batch) => (
-                    <div
-                      key={batch.batch_id}
-                      onClick={() => handleSelectBatch(batch.batch_id)}
-                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                        selectedBatch === batch.batch_id
-                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="font-semibold text-gray-900 dark:text-white">
-                            {batch.batch_name}
-                          </h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {batch.total_customers} customers | Status:
-                            <span className={`ml-1 font-medium ${
-                              batch.status === 'completed' ? 'text-green-600 dark:text-green-400' :
-                              batch.status === 'processing' ? 'text-yellow-600 dark:text-yellow-400' :
-                              'text-red-600 dark:text-red-400'
-                            }`}>
-                              {batch.status}
-                            </span>
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          {batch.avg_churn_probability && (
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              Avg: {(parseFloat(batch.avg_churn_probability) * 100).toFixed(1)}%
-                            </p>
-                          )}
-                          {batch.output_file_url && (
-                            <a
-                              href={batch.output_file_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                            >
-                              Download CSV
-                            </a>
-                          )}
-                        </div>
-                      </div>
-
-                      {batch.risk_distribution && (
-                        <div className="mt-3 flex gap-2">
-                          {Object.entries(batch.risk_distribution).map(([risk, count]) => (
-                            <div key={risk} className="text-xs">
-                              <span className={`px-2 py-1 rounded ${
-                                risk === 'Low' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
-                                risk === 'Medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                                risk === 'High' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400' :
-                                'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                              }`}>
-                                {risk}: {count}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+            {/* Show processing status if batch is being processed */}
+            {batchDetails && batchDetails.status === 'processing' && (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-500 mx-auto mb-4"></div>
+                  <p className="text-lg font-medium text-gray-700 dark:text-gray-300">
+                    Processing Predictions...
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                    Batch: {batchDetails.batch_name}
+                  </p>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+          </div>
+        )}
 
-            {/* Batch Details */}
-            {batchDetails && selectedBatch && (
-              <div className="mt-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-                  Batch Details: {batchDetails.batch_name}
-                </h3>
+        {/* STEP 5: Segmentation */}
+        {currentStep === 5 && (
+          <div>
+            <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
+              Step 5: Customer Segmentation
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Segmenting customers into business categories based on RFM and churn predictions
+            </p>
 
-                {batchDetails.status === 'processing' && (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-500 mx-auto mb-4"></div>
-                    <p className="text-gray-600 dark:text-gray-400">Processing predictions...</p>
+            {segmentationLoading && (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-500 mx-auto mb-4"></div>
+                  <p className="text-lg font-medium text-gray-700 dark:text-gray-300">
+                    Segmenting Customers...
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                    This may take a few moments
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {segmentationStatus === 'completed' && segmentationResults && (
+              <div>
+                <div className="text-center mb-6">
+                  <div className="text-6xl mb-4">✅</div>
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    Segmentation Complete!
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Total Customers</p>
+                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                      {segmentationResults.total_customers}
+                    </p>
                   </div>
-                )}
+                  <div className="bg-green-50 dark:bg-green-900/30 p-4 rounded-lg">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Segmented</p>
+                    <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                      {segmentationResults.segmented}
+                    </p>
+                  </div>
+                </div>
 
-                {batchDetails.status === 'completed' && predictions.length > 0 && (
-                  <div>
+                <Button onClick={() => setCurrentStep(6)} className="w-full">
+                  Continue to Behavior Analysis
+                </Button>
+              </div>
+            )}
+
+            {segmentationStatus === 'failed' && (
+              <div className="text-center">
+                <div className="text-6xl mb-4">❌</div>
+                <p className="text-lg font-medium text-red-600 dark:text-red-400">
+                  Segmentation Failed
+                </p>
+                <Button onClick={() => handleSegmentCustomers(selectedBatch)} className="mt-4">
+                  Retry
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* STEP 6: Behavior Analysis */}
+        {currentStep === 6 && (
+          <div>
+            <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
+              Step 6: Behavior Analysis
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Analyzing customer behaviors and generating retention recommendations
+            </p>
+
+            {!behaviorLoading && !behaviorResults && (
+              <div className="mb-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Limit (Optional - Leave empty to analyze all customers)
+                  </label>
+                  <Input
+                    type="number"
+                    value={behaviorLimit}
+                    onChange={(e) => setBehaviorLimit(e.target.value)}
+                    placeholder="e.g., 100"
+                    min="1"
+                  />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    💡 Tip: Start with a smaller number (e.g., 50-100) for faster testing
+                  </p>
+                </div>
+                <Button onClick={handleAnalyzeBehaviors} className="w-full">
+                  Start Behavior Analysis
+                </Button>
+              </div>
+            )}
+
+            {behaviorLoading && (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-purple-500 mx-auto mb-4"></div>
+                  <p className="text-lg font-medium text-gray-700 dark:text-gray-300">
+                    Analyzing Behaviors...
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                    This may take a few moments
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {behaviorStatus === 'completed' && behaviorResults && (
+              <div>
+                <div className="text-center mb-6">
+                  <div className="text-6xl mb-4">🎉</div>
+                  <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                    Pipeline Complete!
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                    All customers have been predicted, segmented, and analyzed
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                  <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Total Customers</p>
+                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                      {batchDetails?.total_customers || 0}
+                    </p>
+                  </div>
+                  <div className="bg-green-50 dark:bg-green-900/30 p-4 rounded-lg">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Segmented</p>
+                    <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                      {segmentationResults?.segmented || 0}
+                    </p>
+                  </div>
+                  <div className="bg-purple-50 dark:bg-purple-900/30 p-4 rounded-lg">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Analyzed</p>
+                    <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                      {behaviorResults.analyzed}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Full Results Table */}
+                {predictions.length > 0 && (
+                  <div className="mt-6">
+                    <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+                      Complete Customer Analysis
+                    </h3>
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead className="bg-gray-50 dark:bg-gray-700">
                           <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                               Customer ID
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                              Churn Probability
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                              Churn %
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                              Risk Segment
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                              Risk
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                              Predicted At
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                              Segment
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                              Recommendations
                             </th>
                           </tr>
                         </thead>
                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                           {predictions.map((pred, idx) => (
                             <tr key={idx}>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                                 {pred.customer_id}
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                                {(parseFloat(pred.churn_probability) * 100).toFixed(2)}%
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                                {(parseFloat(pred.churn_probability) * 100).toFixed(1)}%
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
+                              <td className="px-4 py-3 whitespace-nowrap">
                                 <span className={`px-2 py-1 text-xs font-semibold rounded ${
                                   pred.risk_segment === 'Low' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
                                   pred.risk_segment === 'Medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
@@ -867,8 +1034,20 @@ export default function ChurnPrediction() {
                                   {pred.risk_segment}
                                 </span>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                                {new Date(pred.predicted_at).toLocaleString()}
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                {pred.segment || 'N/A'}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 max-w-md">
+                                {pred.recommendations && pred.recommendations.length > 0 ? (
+                                  <ul className="list-disc list-inside text-xs">
+                                    {pred.recommendations.slice(0, 2).map((rec, i) => (
+                                      <li key={i}>{rec}</li>
+                                    ))}
+                                    {pred.recommendations.length > 2 && (
+                                      <li className="text-blue-600 dark:text-blue-400">+{pred.recommendations.length - 2} more</li>
+                                    )}
+                                  </ul>
+                                ) : 'N/A'}
                               </td>
                             </tr>
                           ))}
@@ -910,12 +1089,24 @@ export default function ChurnPrediction() {
                 )}
               </div>
             )}
+
+            {behaviorStatus === 'failed' && (
+              <div className="text-center">
+                <div className="text-6xl mb-4">❌</div>
+                <p className="text-lg font-medium text-red-600 dark:text-red-400">
+                  Behavior Analysis Failed
+                </p>
+                <Button onClick={handleAnalyzeBehaviors} className="mt-4">
+                  Retry
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>
 
       {/* Navigation between steps */}
-      {currentStep > 1 && currentStep < 4 && (
+      {currentStep > 1 && currentStep !== 4 && (
         <div className="mt-6 flex justify-between">
           <Button
             onClick={() => setCurrentStep(currentStep - 1)}
@@ -923,11 +1114,6 @@ export default function ChurnPrediction() {
           >
             ← Previous Step
           </Button>
-          {currentStep === 3 && modelMetrics && (
-            <Button onClick={() => setCurrentStep(4)}>
-              Skip to Predictions →
-            </Button>
-          )}
         </div>
       )}
       </div>

@@ -14,7 +14,7 @@ class CustomerSegment(Base):
     __tablename__ = "customer_segments"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    customer_id = Column(UUID(as_uuid=True), ForeignKey("customers.id", ondelete="CASCADE"), nullable=False, index=True)
+    customer_id = Column(String, nullable=False, index=True)  # Now stores external_customer_id as string
     organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
 
     # Segment information
@@ -28,5 +28,4 @@ class CustomerSegment(Base):
     extra_data = Column(JSONB, nullable=True)  # Additional segment-specific data
 
     # Relationships
-    customer = relationship("Customer", backref="customer_segment")
     organization = relationship("Organization", backref="customer_segments")

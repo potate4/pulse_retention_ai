@@ -2,13 +2,12 @@
 Behavior Analysis API Endpoints
 """
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from app.api.deps import get_db
 from app.db.models.organization import Organization
-from app.db.models.customer import Customer
 from app.db.models.behavior_analysis import BehaviorAnalysis
 from app.schemas.behavior import (
     BehaviorAnalysisResponse,
@@ -40,8 +39,9 @@ def get_organization(org_id: uuid.UUID, db: Session) -> Organization:
 
 
 @router.post("/organizations/{org_id}/analyze-behaviors", response_model=BatchBehaviorAnalysisResponse)
-async def analyze_customer_behaviors(
+def analyze_customer_behaviors(
     org_id: uuid.UUID,
+    limit: Optional[int] = Query(None, description="Optional limit on number of customers to process"),
     db: Session = Depends(get_db)
 ):
     """
@@ -58,11 +58,17 @@ async def analyze_customer_behaviors(
     - Banking: Login frequency, transaction volume, feature usage
     - Telecom: Data usage, call patterns, plan utilization
     - Ecommerce: Purchase velocity, cart abandonment, return rates
+
+    Args:
+        org_id: Organization UUID
+        limit: Optional limit on number of customers to process (useful for testing)
+        db: Database session
     """
     org = get_organization(org_id, db)
 
     try:
-        result = batch_analyze_behaviors(org_id, db)
+        # Run batch behavior analysis (synchronous - will block until complete)
+        result = batch_analyze_behaviors(org_id, db, limit=limit)
 
         return BatchBehaviorAnalysisResponse(
             success=result['success'],
@@ -79,8 +85,9 @@ async def analyze_customer_behaviors(
 
 
 @router.get("/customers/{customer_id}/behavior", response_model=BehaviorAnalysisResponse)
-async def get_customer_behavior(
-    customer_id: uuid.UUID,
+def get_customer_behavior(
+    customer_id: str,  # External customer ID (string)
+    org_id: uuid.UUID = Query(..., description="Organization ID"),
     db: Session = Depends(get_db)
 ):
     """
@@ -93,19 +100,15 @@ async def get_customer_behavior(
     - Personalized recommendations
     - Industry-specific metrics
     """
-    # Get customer to verify existence and get organization
-    customer = db.query(Customer).filter(Customer.id == customer_id).first()
-
-    if not customer:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Customer {customer_id} not found"
-        )
+    # Verify organization exists
+    org = get_organization(org_id, db)
+    org_type = org.org_type.value if hasattr(org.org_type, 'value') else org.org_type
 
     try:
         # Check if analysis already exists
         existing_analysis = db.query(BehaviorAnalysis).filter(
-            BehaviorAnalysis.customer_id == customer_id
+            BehaviorAnalysis.customer_id == customer_id,
+            BehaviorAnalysis.organization_id == org_id
         ).first()
 
         if existing_analysis:
@@ -121,14 +124,18 @@ async def get_customer_behavior(
                 risk_signals=existing_analysis.risk_signals or [],
                 recommendations=existing_analysis.recommendations or [],
                 analyzed_at=existing_analysis.analyzed_at,
-                metadata=existing_analysis.metadata
+                metadata=existing_analysis.extra_data
             )
         else:
             # Run fresh analysis
-            org = get_organization(customer.organization_id, db)
-            org_type = org.org_type.value if hasattr(org.org_type, 'value') else org.org_type
-
             analysis_data = analyze_customer(customer_id, org_type, db)
+
+            # Add organization_id to analysis data
+            analysis_data['organization_id'] = org_id
+
+            # Map extra_data to metadata for the response
+            if 'extra_data' in analysis_data:
+                analysis_data['metadata'] = analysis_data.pop('extra_data')
 
             return BehaviorAnalysisResponse(**analysis_data)
 
@@ -142,7 +149,7 @@ async def get_customer_behavior(
 
 
 @router.get("/organizations/{org_id}/behavior-insights", response_model=BehaviorInsightsResponse)
-async def get_organization_behavior_insights(
+def get_organization_behavior_insights(
     org_id: uuid.UUID,
     db: Session = Depends(get_db)
 ):

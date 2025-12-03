@@ -155,5 +155,60 @@ export const churnAPI = {
       }
     )
     return response.data
+  },
+
+  /**
+   * Step 5: Segment customers based on predictions
+   * @param {string} orgId - Organization UUID
+   * @param {string} batchId - Optional batch ID to segment specific batch
+   * @returns {Promise} Segmentation results
+   */
+  segmentCustomers: async (orgId, batchId = null) => {
+    const response = await client.post(
+      `/segmentation/organizations/${orgId}/segment`,
+      null,
+    )
+    return response.data
+  },
+
+  /**
+   * Step 6: Analyze customer behaviors
+   * @param {string} orgId - Organization UUID
+   * @param {number} limit - Optional limit on customers to process
+   * @returns {Promise} Behavior analysis results
+   */
+  analyzeBehaviors: async (orgId, limit = null) => {
+    const response = await client.post(
+      `/behavior/organizations/${orgId}/analyze-behaviors`,
+      null,
+      {
+        params: limit ? { limit } : {}
+      }
+    )
+    return response.data
+  },
+
+  /**
+   * Get segment distribution for organization
+   * @param {string} orgId - Organization UUID
+   * @returns {Promise} Segment distribution
+   */
+  getSegmentDistribution: async (orgId) => {
+    const response = await client.get(
+      `/segmentation/organizations/${orgId}/segments`
+    )
+    return response.data
+  },
+
+  /**
+   * Get behavior insights for organization
+   * @param {string} orgId - Organization UUID
+   * @returns {Promise} Behavior insights
+   */
+  getBehaviorInsights: async (orgId) => {
+    const response = await client.get(
+      `/behavior/organizations/${orgId}/behavior-insights`
+    )
+    return response.data
   }
 }

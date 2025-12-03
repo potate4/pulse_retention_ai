@@ -780,7 +780,7 @@ async def get_batch_predictions(
     db: Session = Depends(get_db)
 ):
     """
-    Get individual customer predictions from a batch.
+    Get individual customer predictions from a batch with segmentation and behavior data.
 
     Args:
         org_id: Organization UUID
@@ -789,8 +789,11 @@ async def get_batch_predictions(
         offset: Offset for pagination (default: 0)
 
     Returns:
-        List of predictions with customer_id, probability, risk segment
+        List of predictions with customer_id, probability, risk segment, segment, and recommendations
     """
+    from app.db.models.customer_segment import CustomerSegment
+    from app.db.models.behavior_analysis import BehaviorAnalysis
+    
     org = get_organization(org_id, db)
 
     # Verify batch exists
@@ -805,14 +808,27 @@ async def get_batch_predictions(
             detail=f"Prediction batch {batch_id} not found"
         )
 
-    # Get predictions
-    predictions = db.query(CustomerPrediction).filter(
+    # Get predictions with joined segmentation and behavior data
+    # Note: customer_id in CustomerSegment and BehaviorAnalysis now stores external_customer_id directly
+    predictions = db.query(
+        CustomerPrediction,
+        CustomerSegment,
+        BehaviorAnalysis
+    ).outerjoin(
+        CustomerSegment,
+        CustomerSegment.customer_id == CustomerPrediction.external_customer_id
+    ).outerjoin(
+        BehaviorAnalysis,
+        BehaviorAnalysis.customer_id == CustomerPrediction.external_customer_id
+    ).filter(
         CustomerPrediction.batch_id == batch_id
     ).limit(limit).offset(offset).all()
 
+    total = db.query(CustomerPrediction).filter(CustomerPrediction.batch_id == batch_id).count()
+
     return {
         "batch_id": str(batch_id),
-        "total": db.query(CustomerPrediction).filter(CustomerPrediction.batch_id == batch_id).count(),
+        "total": total,
         "limit": limit,
         "offset": offset,
         "predictions": [
@@ -820,10 +836,12 @@ async def get_batch_predictions(
                 "customer_id": pred.external_customer_id,
                 "churn_probability": pred.churn_probability,
                 "risk_segment": pred.risk_segment,
+                "segment": segment.segment if segment else None,
+                "recommendations": behavior.recommendations if behavior else None,
                 "features": pred.features,
                 "predicted_at": pred.predicted_at
             }
-            for pred in predictions
+            for pred, segment, behavior in predictions
         ]
     }
 

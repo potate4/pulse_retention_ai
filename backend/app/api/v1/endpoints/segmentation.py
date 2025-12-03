@@ -37,7 +37,7 @@ def get_organization(org_id: uuid.UUID, db: Session) -> Organization:
 
 
 @router.post("/organizations/{org_id}/segment", response_model=BatchSegmentResponse)
-async def segment_customers(
+def segment_customers(
     org_id: uuid.UUID,
     batch_id: Optional[uuid.UUID] = Query(None, description="Optional batch ID to segment specific batch"),
     db: Session = Depends(get_db)
@@ -57,7 +57,7 @@ async def segment_customers(
     org = get_organization(org_id, db)
 
     try:
-        # Run batch segmentation from database
+        # Run batch segmentation from database (synchronous - will block until complete)
         result = batch_segment_customers_from_db(org_id, batch_id, db)
 
         return BatchSegmentResponse(
@@ -75,7 +75,7 @@ async def segment_customers(
 
 
 @router.get("/organizations/{org_id}/segments", response_model=SegmentDistributionResponse)
-async def get_segments_distribution(
+def get_segments_distribution(
     org_id: uuid.UUID,
     db: Session = Depends(get_db)
 ):
@@ -105,7 +105,7 @@ async def get_segments_distribution(
 
 
 @router.get("/customers/{customer_id}/segment", response_model=SegmentResponse)
-async def get_customer_segment_info(
+def get_customer_segment_info(
     customer_id: uuid.UUID,
     db: Session = Depends(get_db)
 ):
@@ -140,7 +140,7 @@ async def get_customer_segment_info(
 
 
 @router.get("/segment-definitions", response_model=SegmentDefinitionsResponse)
-async def get_segment_definitions():
+def get_segment_definitions():
     """
     Get definitions and recommended actions for all 11 customer segments.
 

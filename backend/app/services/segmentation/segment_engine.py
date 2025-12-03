@@ -11,7 +11,6 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import UUID
 
-from app.db.models.customer import Customer
 from app.db.models.customer_feature import CustomerFeature
 from app.db.models.customer_segment import CustomerSegment
 from app.db.models.churn_prediction import ChurnPrediction
@@ -601,23 +600,16 @@ def batch_segment_customers_from_db(
 
         print(f"RFM lookup created for {len(rfm_lookup)} customers")
 
-        # STEP 3: Get minimal Customer UUID mapping (external_customer_id -> customer_id)
-        customers = db.query(Customer).filter(
-            Customer.external_customer_id.in_(external_ids),
-            Customer.organization_id == organization_id
-        ).all()
+        # STEP 3: Use external_customer_ids directly (no Customer table lookup needed)
+        # Map external_customer_id to itself for consistency with existing code structure
+        customer_id_map = {ext_id: ext_id for ext_id in external_ids}
 
-        customer_uuid_map = {
-            c.external_customer_id: c.id
-            for c in customers
-        }
-
-        print(f"Found {len(customer_uuid_map)} customers in database")
+        print(f"Processing {len(customer_id_map)} customers")
 
         # STEP 4: Get existing segments and clean up duplicates
-        customer_uuids = list(customer_uuid_map.values())
         existing_segments = db.query(CustomerSegment).filter(
-            CustomerSegment.customer_id.in_(customer_uuids)
+            CustomerSegment.customer_id.in_(external_ids),
+            CustomerSegment.organization_id == organization_id
         ).all()
 
         # Build lookup and handle duplicates by keeping only the most recent
@@ -667,15 +659,8 @@ def batch_segment_customers_from_db(
 
         for external_id, churn_probability in churn_lookup.items():
             try:
-                # Check if customer exists in database
-                if external_id not in customer_uuid_map:
-                    errors.append(f"Customer {external_id} not found in Customer table")
-                    continue
-
-                customer_uuid = customer_uuid_map[external_id]
-
                 # Skip if already processed in this batch (safeguard against duplicate data)
-                if customer_uuid in processed_customer_ids:
+                if external_id in processed_customer_ids:
                     continue
 
                 # Validate churn score
@@ -722,8 +707,8 @@ def batch_segment_customers_from_db(
                 # Get segment metadata
                 metadata = get_segment_metadata(segment)
 
-                # Check if segment exists
-                existing_segment = existing_segments_lookup.get(customer_uuid)
+                # Check if segment exists (using external_customer_id directly)
+                existing_segment = existing_segments_lookup.get(external_id)
 
                 if existing_segment:
                     # Prepare update data as dictionary (for bulk_update_mappings)
@@ -738,9 +723,9 @@ def batch_segment_customers_from_db(
                     }
                     segments_to_update.append(update_data)
                 else:
-                    # Create new segment object
+                    # Create new segment object (using external_customer_id directly)
                     new_segment = CustomerSegment(
-                        customer_id=customer_uuid,
+                        customer_id=external_id,  # Using external_customer_id directly as string
                         organization_id=organization_id,
                         segment=segment,
                         segment_score=segment_score,
@@ -751,7 +736,7 @@ def batch_segment_customers_from_db(
                     segments_to_add.append(new_segment)
 
                 # Mark customer as processed
-                processed_customer_ids.add(customer_uuid)
+                processed_customer_ids.add(external_id)
                 segmented += 1
 
                 # Progress indicator

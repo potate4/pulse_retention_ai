@@ -39,13 +39,14 @@ def analyze_ecommerce_behavior(timeline: pd.DataFrame) -> Dict[str, Any]:
     risk_signals = []
     industry_metrics = {}
 
-    # Define time periods
-    now = datetime.now()
-    last_30_days = now - timedelta(days=30)
-    last_90_days = now - timedelta(days=90)
-
     # Convert event_date to datetime
     timeline['event_date'] = pd.to_datetime(timeline['event_date'])
+
+    # Define time periods based on the most recent event in the data
+    # This allows analysis to work with historical data
+    now = timeline['event_date'].max()
+    last_30_days = now - timedelta(days=30)
+    last_90_days = now - timedelta(days=90)
 
     # 1. Cart Abandonment Analysis
     cart_adds = timeline[timeline['event_type'] == 'cart_add']
@@ -257,7 +258,9 @@ def calculate_engagement_level(timeline: pd.DataFrame, lookback_date: datetime) 
     # Factors: purchase count, browsing activity, recency
     purchases = len(recent_data[recent_data['event_type'] == 'purchase'])
     views = len(recent_data[recent_data['event_type'] == 'product_view'])
-    days_since_last = (datetime.now() - recent_data['event_date'].max()).days
+    # Use max date from timeline for recency calculation
+    max_date = timeline['event_date'].max()
+    days_since_last = (max_date - recent_data['event_date'].max()).days
 
     # Score components
     purchase_score = min(100, purchases * 10)

@@ -8,9 +8,9 @@ from app.db.base_class import Base
 
 class Transaction(Base):
     __tablename__ = "transactions"
-    
+
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    customer_id = Column(UUID(as_uuid=True), ForeignKey("customers.id"), nullable=False, index=True)
+    customer_id = Column(String, nullable=False, index=True)  # External customer ID string
     organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False, index=True)
     event_date = Column(Date, nullable=False, index=True)
     amount = Column(Numeric(10, 2), nullable=True)
@@ -19,6 +19,6 @@ class Transaction(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     
     # Relationships
-    customer = relationship("Customer", back_populates="transactions")
+    # Note: No direct foreign key relationship with Customer since customer_id is external_customer_id (string)
     organization = relationship("Organization", back_populates="transactions")
 

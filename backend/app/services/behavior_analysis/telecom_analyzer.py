@@ -39,13 +39,29 @@ def analyze_telecom_behavior(timeline: pd.DataFrame) -> Dict[str, Any]:
     risk_signals = []
     industry_metrics = {}
 
-    # Define time periods
-    now = datetime.now()
-    last_30_days = now - timedelta(days=30)
-    last_90_days = now - timedelta(days=90)
-
     # Convert event_date to datetime
     timeline['event_date'] = pd.to_datetime(timeline['event_date'])
+
+    # Map banking-style event types to telecom equivalents for compatibility
+    # This allows the analyzer to work with datasets that use banking terminology
+    event_type_mapping = {
+        'transaction': 'data_usage',  # Map transactions to data usage
+        'transfer': 'call',  # Map transfers to calls
+        'login': 'data_usage',  # Map logins to data usage (app usage)
+        'bill_pay': 'bill_payment',  # Standardize billing events
+        'support_contact': 'support_call',  # Standardize support events
+        'mobile_deposit': 'sms',  # Map mobile deposits to SMS usage
+        'balance_check': 'data_usage'  # Map balance checks to data usage
+    }
+
+    # Apply mapping if needed
+    timeline['event_type'] = timeline['event_type'].replace(event_type_mapping)
+
+    # Define time periods based on the most recent event in the data
+    # This allows analysis to work with historical data
+    now = timeline['event_date'].max()
+    last_30_days = now - timedelta(days=30)
+    last_90_days = now - timedelta(days=90)
 
     # 1. Data Usage Analysis
     data_usage = timeline[timeline['event_type'] == 'data_usage']
@@ -171,72 +187,109 @@ def analyze_telecom_behavior(timeline: pd.DataFrame) -> Dict[str, Any]:
 
 def calculate_usage_trend(timeline: pd.DataFrame, lookback_date: datetime) -> str:
     """Calculate usage trend (increasing, stable, declining)."""
-    recent_data = timeline[timeline['event_date'] >= lookback_date]
+    # Calculate trend over the entire timeline, not just recent data
+    # This allows trend detection even with sparse historical data
 
-    if len(recent_data) < 2:
+    if len(timeline) < 2:
+        # For single event, check if it's recent or old
+        if len(timeline) == 1:
+            max_date = timeline['event_date'].max()
+            days_old = (max_date - timeline['event_date'].iloc[0]).days
+            # If only event is recent (within 30 days of max date), consider stable
+            if days_old <= 30:
+                return 'stable'
+            else:
+                return 'declining'  # Old data suggests inactivity
         return 'unknown'
 
-    # Daily activity count
-    daily_counts = recent_data.groupby(recent_data['event_date'].dt.date).size()
+    # Compare first half vs second half of the timeline
+    timeline_sorted = timeline.sort_values('event_date')
+    midpoint = len(timeline_sorted) // 2
 
-    if len(daily_counts) < 2:
+    first_half = timeline_sorted.iloc[:midpoint]
+    second_half = timeline_sorted.iloc[midpoint:]
+
+    # Calculate event rates (events per day)
+    first_half_days = (first_half['event_date'].max() - first_half['event_date'].min()).days + 1
+    second_half_days = (second_half['event_date'].max() - second_half['event_date'].min()).days + 1
+
+    first_half_rate = len(first_half) / max(first_half_days, 1)
+    second_half_rate = len(second_half) / max(second_half_days, 1)
+
+    # Compare rates with a threshold
+    if second_half_rate > first_half_rate * 1.2:
+        return 'increasing'
+    elif second_half_rate < first_half_rate * 0.8:
+        return 'declining'
+    else:
         return 'stable'
-
-    x = np.arange(len(daily_counts))
-    y = daily_counts.values
-
-    if len(x) > 1:
-        slope = np.polyfit(x, y, 1)[0]
-        if slope > 0.5:
-            return 'increasing'
-        elif slope < -0.5:
-            return 'declining'
-
-    return 'stable'
 
 
 def calculate_value_trend(timeline: pd.DataFrame, lookback_date: datetime) -> str:
     """Calculate spending/usage value trend."""
-    recent_data = timeline[timeline['event_date'] >= lookback_date]
+    # Calculate trend over the entire timeline for better accuracy with sparse data
 
-    if len(recent_data) < 2:
+    if len(timeline) < 2:
+        # For single event, compare amount to a baseline
+        if len(timeline) == 1:
+            amount = timeline['amount'].iloc[0]
+            # Use a simple heuristic: amounts above 50 are stable, below 30 declining
+            if amount >= 50:
+                return 'stable'
+            elif amount < 30:
+                return 'declining'
+            else:
+                return 'stable'
         return 'unknown'
 
-    # Daily sum of amounts
-    daily_values = recent_data.groupby(recent_data['event_date'].dt.date)['amount'].sum()
+    # Compare first half vs second half average amounts
+    timeline_sorted = timeline.sort_values('event_date')
+    midpoint = len(timeline_sorted) // 2
 
-    if len(daily_values) < 2:
+    first_half_avg = timeline_sorted.iloc[:midpoint]['amount'].mean()
+    second_half_avg = timeline_sorted.iloc[midpoint:]['amount'].mean()
+
+    # Compare averages with a threshold
+    if second_half_avg > first_half_avg * 1.15:
+        return 'increasing'
+    elif second_half_avg < first_half_avg * 0.85:
+        return 'declining'
+    else:
         return 'stable'
-
-    x = np.arange(len(daily_values))
-    y = daily_values.values
-
-    if len(x) > 1:
-        slope = np.polyfit(x, y, 1)[0]
-        if slope > 5:
-            return 'increasing'
-        elif slope < -5:
-            return 'declining'
-
-    return 'stable'
 
 
 def calculate_engagement_level(timeline: pd.DataFrame, lookback_date: datetime) -> float:
     """Calculate engagement level (0-100) based on usage patterns."""
-    recent_data = timeline[timeline['event_date'] >= lookback_date]
-
-    if len(recent_data) == 0:
+    # Use entire timeline for better engagement assessment
+    if len(timeline) == 0:
         return 0.0
 
-    # Factors: usage count, service diversity, recency
-    usage_count = len(recent_data)
-    service_diversity = recent_data['event_type'].nunique()
-    days_since_last = (datetime.now() - recent_data['event_date'].max()).days
+    # Factors: usage count, service diversity, recency, activity spread
+    usage_count = len(timeline)
+    service_diversity = timeline['event_type'].nunique()
+
+    # Calculate recency - how recent is the latest activity
+    max_date = timeline['event_date'].max()
+    min_date = timeline['event_date'].min()
+    timeline_span_days = (max_date - min_date).days + 1
+
+    # For single event customers, recency is based on event date relative to max date in dataset
+    # This assumes max_date represents "now" in the historical data
+    days_since_last = 0  # Since we're using max_date from timeline as reference
+
+    # Activity spread - more spread out events over time show consistent engagement
+    activity_spread_score = min(100, (timeline_span_days / 365) * 100)
 
     # Score components
-    usage_score = min(100, usage_count * 1.5)
+    usage_score = min(100, usage_count * 3)  # Increased weight for usage count
     diversity_score = min(100, service_diversity * 15)
     recency_score = max(0, 100 - (days_since_last * 5))
 
-    engagement = (usage_score * 0.5 + diversity_score * 0.2 + recency_score * 0.3)
+    # Weighted combination
+    engagement = (
+        usage_score * 0.4 +
+        diversity_score * 0.2 +
+        recency_score * 0.2 +
+        activity_spread_score * 0.2
+    )
     return round(engagement, 2)
