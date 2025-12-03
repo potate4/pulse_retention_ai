@@ -6,10 +6,11 @@ app = FastAPI()
 
 # CORS configuration
 origins = [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "https://shrobon-audio.web.app",
-    "https://audio.shrobon.com",
+    "*",  # Allow all origins for widget to work (development mode)
+    # "http://localhost:5173",
+    # "http://localhost:5174",
+    # "https://shrobon-audio.web.app",
+    # "https://audio.shrobon.com",
 ]
 
 # Add CORS middleware FIRST (before routes)

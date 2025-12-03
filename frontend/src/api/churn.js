@@ -158,6 +158,44 @@ export const churnAPI = {
   },
 
   /**
+   * Get all customers from prediction batches with optional risk segment filter
+   * @param {string} orgId - Organization UUID
+   * @param {string} riskSegment - Optional risk segment filter (Low, Medium, High, Critical)
+   * @param {number} limit - Number of customers to return
+   * @param {number} offset - Pagination offset
+   * @returns {Promise} List of customers with prediction data
+   */
+  getPredictionCustomers: async (orgId, riskSegment = null, limit = 100, offset = 0) => {
+    const params = new URLSearchParams({ limit: limit.toString(), offset: offset.toString() })
+    if (riskSegment) params.append('risk_segment', riskSegment)
+    const response = await client.get(
+      `/churn/v2/organizations/${orgId}/prediction-customers?${params.toString()}`
+    )
+    return response.data
+  },
+
+  /**
+   * Analyze WHY a customer has their churn risk using LLM
+   * @param {string} orgId - Organization UUID
+   * @param {string} customerId - External customer ID
+   * @param {number} churnProbability - Churn probability (0-1)
+   * @param {string} riskLevel - Risk level (Low/Medium/High/Critical)
+   * @returns {Promise} LLM analysis with patterns and retention tips
+   */
+  analyzeChurnReason: async (orgId, customerId, churnProbability, riskLevel) => {
+    const response = await client.post(
+      `/churn/v2/organizations/${orgId}/customers/${customerId}/analyze-churn-reason`,
+      null,
+      {
+        params: {
+          churn_probability: churnProbability,
+          risk_level: riskLevel
+        }
+      }
+    )
+    return response.data
+  },
+  /**
    * Step 5: Segment customers based on predictions
    * @param {string} orgId - Organization UUID
    * @param {string} batchId - Optional batch ID to segment specific batch
@@ -188,11 +226,6 @@ export const churnAPI = {
     return response.data
   },
 
-  /**
-   * Get segment distribution for organization
-   * @param {string} orgId - Organization UUID
-   * @returns {Promise} Segment distribution
-   */
   getSegmentDistribution: async (orgId) => {
     const response = await client.get(
       `/segmentation/organizations/${orgId}/segments`
@@ -208,6 +241,28 @@ export const churnAPI = {
   getBehaviorInsights: async (orgId) => {
     const response = await client.get(
       `/behavior/organizations/${orgId}/behavior-insights`
+    )
+    return response.data
+  },
+
+  /**
+   * Generate personalized retention email HTML using LLM
+   * @param {string} orgId - Organization UUID
+   * @param {string} customerId - External customer ID
+   * @param {number} churnProbability - Churn probability (0-1)
+   * @param {string} riskLevel - Risk level (Low/Medium/High/Critical)
+   * @returns {Promise} Generated email with subject and HTML body
+   */
+  generatePersonalizedEmail: async (orgId, customerId, churnProbability, riskLevel) => {
+    const response = await client.post(
+      `/churn/v2/organizations/${orgId}/customers/${customerId}/generate-personalized-email`,
+      null,
+      {
+        params: {
+          churn_probability: churnProbability,
+          risk_level: riskLevel
+        }
+      }
     )
     return response.data
   }

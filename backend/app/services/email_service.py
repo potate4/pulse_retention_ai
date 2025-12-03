@@ -25,7 +25,7 @@ class EmailService:
     async def generate_email_preview(
         customer_ids: Optional[List[str]] = None,
         segment_id: Optional[str] = None,
-        organization_id: int = 1,
+        organization_id: Any = 1,  # Can be int or UUID
         extra_params: Optional[Dict[str, Any]] = None
     ) -> EmailGenerateResponse:
         """
@@ -72,7 +72,7 @@ class EmailService:
         text_body: Optional[str],
         customer_ids: List[str],
         segment_id: Optional[str],
-        organization_id: int = 1
+        organization_id: Any = 1  # Can be int or UUID
     ) -> EmailSendResponse:
         """
         Send personalized emails to customers.
@@ -89,9 +89,18 @@ class EmailService:
             EmailSendResponse with send results
         """
         # Get customers
-        customers = await CustomerService.get_customers_by_ids(customer_ids, organization_id)
+        print(f"[DEBUG EmailService] Getting customers: {customer_ids}")
+        print(f"[DEBUG EmailService] Organization ID: {organization_id}")
+        
+        try:
+            customers = await CustomerService.get_customers_by_ids(customer_ids, organization_id)
+            print(f"[DEBUG EmailService] Found {len(customers)} customers")
+        except Exception as e:
+            print(f"[ERROR EmailService] Failed to get customers: {str(e)}")
+            raise
         
         if not customers:
+            print("[DEBUG EmailService] No customers found")
             return EmailSendResponse(
                 success=False,
                 message="No customers found",

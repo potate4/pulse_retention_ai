@@ -265,14 +265,14 @@ async def batch_score_customers(
     Batch score all customers and store predictions.
     """
     get_organization(org_id, db)
-    
+
     try:
         # Batch predict
         predictions_df = batch_predict(org_id, db)
-        
+
         # Store predictions
         result = store_predictions(db, org_id, predictions_df)
-        
+
         return BatchScoreResponse(
             success=True,
             predictions_stored=result["stored"],
@@ -283,4 +283,84 @@ async def batch_score_customers(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error in batch scoring: {str(e)}"
         )
+
+
+@router.post("/organizations/{org_id}/customers/{customer_id}/analyze-churn-reason")
+async def analyze_customer_churn_reason(
+    org_id: uuid.UUID,
+    customer_id: str,
+    churn_probability: float,
+    risk_level: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Use LLM to analyze WHY a customer has their churn risk based on transaction patterns.
+    """
+    from app.services.behavior_analysis.llm_suggestions import analyze_churn_reason
+
+    get_organization(org_id, db)
+
+    try:
+        result = analyze_churn_reason(
+            customer_id=customer_id,
+            organization_id=str(org_id),
+            churn_probability=churn_probability,
+            risk_level=risk_level,
+            db=db
+        )
+
+        if result:
+            return {"success": True, **result}
+        else:
+            return {
+                "success": False,
+                "analysis": "Unable to generate analysis. Please ensure OPENAI_API_KEY is set.",
+                "key_patterns": [],
+                "retention_tips": []
+            }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error analyzing churn reason: {str(e)}"
+        )
+
+
+@router.post("/organizations/{org_id}/customers/{customer_id}/generate-personalized-email")
+async def generate_personalized_email_endpoint(
+    org_id: uuid.UUID,
+    customer_id: str,
+    churn_probability: float,
+    risk_level: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Use LLM to generate personalized retention email HTML for a customer.
+    """
+    from app.services.behavior_analysis.llm_suggestions import generate_personalized_email
+
+    get_organization(org_id, db)
+
+    try:
+        result = generate_personalized_email(
+            customer_id=customer_id,
+            organization_id=str(org_id),
+            churn_probability=churn_probability,
+            risk_level=risk_level,
+            db=db
+        )
+
+        if result:
+            return {"success": True, **result}
+        else:
+            return {
+                "success": False,
+                "subject": "We'd Love to Have You Back!",
+                "html_body": "<html><body><p>Unable to generate personalized email.</p></body></html>"
+            }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error generating personalized email: {str(e)}"
+        )
+
 

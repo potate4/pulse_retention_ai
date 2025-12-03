@@ -6,7 +6,8 @@
       "Bash(python:*)",
       "Bash(dir \"d:\\pulse_retention_ai\\backend\" /s /b *.py)",
       "Bash(findstr:*)",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []

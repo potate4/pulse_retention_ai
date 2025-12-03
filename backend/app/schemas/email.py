@@ -4,9 +4,9 @@ from datetime import datetime
 
 
 class EmailGenerateRequest(BaseModel):
-    customer_ids: Optional[List[str]] = []
+    customer_ids: Optional[List[str]] = None
     segment_id: Optional[str] = None
-    extra_params: Optional[Dict[str, Any]] = {}
+    extra_params: Optional[Dict[str, Any]] = None
 
 
 class EmailGenerateResponse(BaseModel):

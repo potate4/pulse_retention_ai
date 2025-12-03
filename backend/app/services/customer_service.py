@@ -157,9 +157,11 @@ class CustomerService:
         return None
     
     @staticmethod
-    async def get_customers_by_ids(customer_ids: List[str], organization_id: int) -> List[CustomerResponse]:
+    async def get_customers_by_ids(customer_ids: List[str], organization_id: Any) -> List[CustomerResponse]:
         """
         Get multiple customers by their IDs.
+        For prediction customers (not found in regular customer data), creates customer objects
+        with default email address.
         
         Args:
             customer_ids: List of customer IDs
@@ -176,7 +178,28 @@ class CustomerService:
         """
         customers = CustomerService.get_mock_customers()
         filtered = [c for c in customers if c["id"] in customer_ids]
-        return [CustomerResponse(**c, organization_id=organization_id) for c in filtered]
+        found_ids = {c["id"] for c in filtered}
+        
+        # For any customer_ids not found in regular customers, create prediction customer objects
+        # with default email address
+        DEFAULT_EMAIL = "sumaiyaahmed@iut-dhaka.edu"
+        DEFAULT_SEGMENT_ID = "s3"  # Default segment for prediction customers
+        prediction_customers = []
+        for customer_id in customer_ids:
+            if customer_id not in found_ids:
+                # This is a prediction customer - create customer object with default email
+                prediction_customers.append({
+                    "id": customer_id,
+                    "name": f"Customer {customer_id}",
+                    "email": DEFAULT_EMAIL,
+                    "phone": None,
+                    "segment_id": DEFAULT_SEGMENT_ID,  # Use default segment for template generation
+                    "churn_score": 0.0,
+                    "custom_fields": {}
+                })
+        
+        all_customers = filtered + prediction_customers
+        return [CustomerResponse(**c, organization_id=organization_id) for c in all_customers]
     
     @staticmethod
     async def get_customers_by_segment(segment_id: str, organization_id: int) -> List[CustomerResponse]:

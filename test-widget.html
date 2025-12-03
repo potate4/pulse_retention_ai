@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pulse Widget Test Page</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #3B3758;
+    }
+    .info-box {
+      background: #e8f4f8;
+      border-left: 4px solid #7AACB3;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    .config {
+      background: #f9f9f9;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 15px 0;
+      font-family: monospace;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Welcome to My Store</h1>
+    <p>This is a test page for the Pulse Retention Widget.</p>
+    
+    <div class="info-box">
+      <strong>Widget Configuration:</strong>
+      <div class="config">
+        Business ID: <span id="business-id">586a35d8-eb2c-422c-8c7c-34c5f0d2a22a</span><br>
+        Customer Email: <span id="customer-email">test@example.com</span><br>
+        API URL: <span id="api-url">http://127.0.0.1:8000</span>
+      </div>
+    </div>
+
+    <div class="info-box">
+      <strong>Testing Instructions:</strong>
+      <ol>
+        <li>Make sure the backend server is running on port 8000</li>
+        <li>Open browser console (F12) to see widget logs</li>
+        <li>The popup should appear after 2.5 seconds</li>
+        <li>Check console for API calls and responses</li>
+      </ol>
+    </div>
+
+    <h2>Sample Content</h2>
+    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+    <p>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+  </div>
+
+  <!-- Pulse Widget - Add before closing body tag -->
+  <script src="https://zeeyyprualbmvkblwrak.supabase.co/storage/v1/object/public/widgets/v1/pulse-retention-widget.js?"
+    data-business-id="586a35d8-eb2c-422c-8c7c-34c5f0d2a22a"
+    data-email="test@example.com"
+    data-api-url="http://127.0.0.1:8000"
+  ></script>
+</body>
+</html>
