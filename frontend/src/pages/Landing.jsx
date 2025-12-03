@@ -230,6 +230,145 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* Pricing Section */}
+      <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+            Simple, Transparent Pricing
+          </h2>
+          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Choose the perfect plan for your business needs
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          {/* Starter Plan */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden transition-transform hover:scale-105">
+            <div className="h-1.5 bg-gradient-to-r from-blue-500 to-blue-600"></div>
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Starter</h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">Perfect for small businesses</p>
+              <div className="mb-4">
+                <span className="text-3xl font-bold text-gray-900 dark:text-white">৳20,000</span>
+                <span className="text-gray-600 dark:text-gray-400 ml-1 text-sm">/month</span>
+              </div>
+              <Link to="/pricing-billing">
+                <button className="w-full py-2.5 px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:opacity-90 transition-opacity text-sm">
+                  Get Started
+                </button>
+              </Link>
+              <ul className="mt-6 space-y-2">
+                <li className="flex items-center text-sm text-gray-700 dark:text-gray-300">
+                  <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  Up to 1,000 customers
+                </li>
+                <li className="flex items-center text-sm text-gray-700 dark:text-gray-300">
+                  <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  Basic churn prediction
+                </li>
+                <li className="flex items-center text-sm text-gray-700 dark:text-gray-300">
+                  <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  Email campaigns
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Professional Plan */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden transition-transform hover:scale-105 ring-2 ring-purple-500">
+            <div className="h-1.5 bg-gradient-to-r from-purple-500 to-purple-600"></div>
+            <div className="absolute top-0 right-0 bg-purple-500 text-white px-3 py-0.5 text-xs font-semibold rounded-bl-lg">
+              Most Popular
+            </div>
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Professional</h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">Best for growing businesses</p>
+              <div className="mb-4">
+                <span className="text-3xl font-bold text-gray-900 dark:text-white">৳35,000</span>
+                <span className="text-gray-600 dark:text-gray-400 ml-1 text-sm">/month</span>
+              </div>
+              <Link to="/pricing-billing">
+                <button className="w-full py-2.5 px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-purple-500 to-purple-600 hover:opacity-90 transition-opacity text-sm">
+                  Get Started
+                </button>
+              </Link>
+              <ul className="mt-6 space-y-2">
+                <li className="flex items-center text-sm text-gray-700 dark:text-gray-300">
+                  <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  Up to 5,000 customers
+                </li>
+                <li className="flex items-center text-sm text-gray-700 dark:text-gray-300">
+                  <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  Advanced AI predictions
+                </li>
+                <li className="flex items-center text-sm text-gray-700 dark:text-gray-300">
+                  <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  ROI dashboard & API access
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Enterprise Plan */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden transition-transform hover:scale-105">
+            <div className="h-1.5 bg-gradient-to-r from-indigo-500 to-indigo-600"></div>
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Enterprise</h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">Complete solution</p>
+              <div className="mb-4">
+                <span className="text-3xl font-bold text-gray-900 dark:text-white">৳50,000</span>
+                <span className="text-gray-600 dark:text-gray-400 ml-1 text-sm">/month</span>
+              </div>
+              <Link to="/pricing-billing">
+                <button className="w-full py-2.5 px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-indigo-500 to-indigo-600 hover:opacity-90 transition-opacity text-sm">
+                  Get Started
+                </button>
+              </Link>
+              <ul className="mt-6 space-y-2">
+                <li className="flex items-center text-sm text-gray-700 dark:text-gray-300">
+                  <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  Unlimited customers
+                </li>
+                <li className="flex items-center text-sm text-gray-700 dark:text-gray-300">
+                  <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  All features + Custom integrations
+                </li>
+                <li className="flex items-center text-sm text-gray-700 dark:text-gray-300">
+                  <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  24/7 Priority support
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div className="text-center mt-12">
+          <Link to="/pricing-billing">
+            <button className="text-purple-600 dark:text-purple-400 font-semibold hover:underline">
+              View detailed pricing and features →
+            </button>
+          </Link>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 dark:from-blue-700 dark:via-purple-700 dark:to-pink-700 rounded-3xl p-12 md:p-16 text-center text-white relative overflow-hidden">
@@ -284,3 +423,4 @@ const Landing = () => {
 }
 
 export default Landing
+
