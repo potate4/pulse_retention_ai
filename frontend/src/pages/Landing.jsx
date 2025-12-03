@@ -2,18 +2,22 @@ import { Link } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import Button from '../components/Button'
 import ThemeToggle from '../components/ThemeToggle'
+import HeroBackground from '../components/HeroBackground'
 import logoMain from '../../../logo main.png'
 
 const Landing = () => {
   const { isAuthenticated } = useAuthStore()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="min-h-screen bg-white dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 relative">
+      {/* Abstract Hero Background */}
+      <HeroBackground />
+      
       {/* Theme Toggle */}
       <ThemeToggle />
       
       {/* Navigation */}
-      <nav className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <nav className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 relative z-10">
         <div className="flex justify-between items-center">
           <div>
             <img src={logoMain} alt="Pulse" className="h-12 sm:h-16 md:h-20 lg:h-24 object-contain" />
@@ -38,7 +42,7 @@ const Landing = () => {
       </nav>
 
       {/* Hero Section */}
-      <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10">
         <div className="text-center max-w-4xl mx-auto">
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-gray-900 dark:text-white mb-6 leading-tight">
             Welcome to{' '}
@@ -84,29 +88,26 @@ const Landing = () => {
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-xl p-6 transform hover:scale-105 transition-transform">
                   <div className="w-12 h-12 bg-blue-600 dark:bg-blue-500 rounded-lg mb-4 flex items-center justify-center">
                     <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Secure</h3>
-                  <p className="text-gray-600 dark:text-gray-300 text-sm">Enterprise-grade security with JWT authentication</p>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">AI Churn Prediction</h3>
                 </div>
                 <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 rounded-xl p-6 transform hover:scale-105 transition-transform">
                   <div className="w-12 h-12 bg-purple-600 dark:bg-purple-500 rounded-lg mb-4 flex items-center justify-center">
                     <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Role-Based</h3>
-                  <p className="text-gray-600 dark:text-gray-300 text-sm">Flexible role management for teams of any size</p>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Personalized Campaigns</h3>
                 </div>
                 <div className="bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/30 dark:to-pink-800/30 rounded-xl p-6 transform hover:scale-105 transition-transform">
                   <div className="w-12 h-12 bg-pink-600 dark:bg-pink-500 rounded-lg mb-4 flex items-center justify-center">
                     <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Fast</h3>
-                  <p className="text-gray-600 dark:text-gray-300 text-sm">Lightning-fast performance with modern tech stack</p>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">ROI Analytics</h3>
                 </div>
               </div>
             </div>
@@ -226,6 +227,145 @@ const Landing = () => {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+            Simple, Transparent Pricing
+          </h2>
+          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Choose the perfect plan for your business needs
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          {/* Starter Plan */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden transition-transform hover:scale-105">
+            <div className="h-1.5 bg-gradient-to-r from-blue-500 to-blue-600"></div>
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Starter</h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">Perfect for small businesses</p>
+              <div className="mb-4">
+                <span className="text-3xl font-bold text-gray-900 dark:text-white">৳20,000</span>
+                <span className="text-gray-600 dark:text-gray-400 ml-1 text-sm">/month</span>
+              </div>
+              <Link to="/pricing-billing">
+                <button className="w-full py-2.5 px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:opacity-90 transition-opacity text-sm">
+                  Get Started
+                </button>
+              </Link>
+              <ul className="mt-6 space-y-2">
+                <li className="flex items-center text-sm text-gray-700 dark:text-gray-300">
+                  <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  Up to 1,000 customers
+                </li>
+                <li className="flex items-center text-sm text-gray-700 dark:text-gray-300">
+                  <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  Basic churn prediction
+                </li>
+                <li className="flex items-center text-sm text-gray-700 dark:text-gray-300">
+                  <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  Email campaigns
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Professional Plan */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden transition-transform hover:scale-105 ring-2 ring-purple-500">
+            <div className="h-1.5 bg-gradient-to-r from-purple-500 to-purple-600"></div>
+            <div className="absolute top-0 right-0 bg-purple-500 text-white px-3 py-0.5 text-xs font-semibold rounded-bl-lg">
+              Most Popular
+            </div>
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Professional</h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">Best for growing businesses</p>
+              <div className="mb-4">
+                <span className="text-3xl font-bold text-gray-900 dark:text-white">৳35,000</span>
+                <span className="text-gray-600 dark:text-gray-400 ml-1 text-sm">/month</span>
+              </div>
+              <Link to="/pricing-billing">
+                <button className="w-full py-2.5 px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-purple-500 to-purple-600 hover:opacity-90 transition-opacity text-sm">
+                  Get Started
+                </button>
+              </Link>
+              <ul className="mt-6 space-y-2">
+                <li className="flex items-center text-sm text-gray-700 dark:text-gray-300">
+                  <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  Up to 5,000 customers
+                </li>
+                <li className="flex items-center text-sm text-gray-700 dark:text-gray-300">
+                  <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  Advanced AI predictions
+                </li>
+                <li className="flex items-center text-sm text-gray-700 dark:text-gray-300">
+                  <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  ROI dashboard & API access
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Enterprise Plan */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden transition-transform hover:scale-105">
+            <div className="h-1.5 bg-gradient-to-r from-indigo-500 to-indigo-600"></div>
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Enterprise</h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">Complete solution</p>
+              <div className="mb-4">
+                <span className="text-3xl font-bold text-gray-900 dark:text-white">৳50,000</span>
+                <span className="text-gray-600 dark:text-gray-400 ml-1 text-sm">/month</span>
+              </div>
+              <Link to="/pricing-billing">
+                <button className="w-full py-2.5 px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-indigo-500 to-indigo-600 hover:opacity-90 transition-opacity text-sm">
+                  Get Started
+                </button>
+              </Link>
+              <ul className="mt-6 space-y-2">
+                <li className="flex items-center text-sm text-gray-700 dark:text-gray-300">
+                  <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  Unlimited customers
+                </li>
+                <li className="flex items-center text-sm text-gray-700 dark:text-gray-300">
+                  <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  All features + Custom integrations
+                </li>
+                <li className="flex items-center text-sm text-gray-700 dark:text-gray-300">
+                  <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  24/7 Priority support
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div className="text-center mt-12">
+          <Link to="/pricing-billing">
+            <button className="text-purple-600 dark:text-purple-400 font-semibold hover:underline">
+              View detailed pricing and features →
+            </button>
+          </Link>
         </div>
       </section>
 
