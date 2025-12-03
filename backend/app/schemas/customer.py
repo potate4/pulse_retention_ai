@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union
+from uuid import UUID
 
 
 class CustomerBase(BaseModel):
@@ -13,7 +14,7 @@ class CustomerBase(BaseModel):
 
 class CustomerCreate(CustomerBase):
     id: str
-    organization_id: int
+    organization_id: Union[int, UUID]
 
 
 class CustomerUpdate(BaseModel):
@@ -27,7 +28,7 @@ class CustomerUpdate(BaseModel):
 
 class CustomerResponse(CustomerBase):
     id: str
-    organization_id: int
+    organization_id: Union[int, UUID]  # Can be int or UUID
 
     class Config:
         from_attributes = True

@@ -14,9 +14,8 @@ const Analytics = () => {
   const [error, setError] = useState(null)
   const [metrics, setMetrics] = useState(null)
   const [churnData, setChurnData] = useState(null)
-  const [segments, setSegments] = useState(null)
-  const [churnReasons, setChurnReasons] = useState(null)
   const [riskData, setRiskData] = useState(null)
+  const [valueData, setValueData] = useState(null)
 
   // Fetch analytics data from backend
   useEffect(() => {
@@ -26,16 +25,15 @@ const Analytics = () => {
         setError(null)
 
         // Fetch all analytics data in parallel
-        const [metricsData, churnTrendData, segmentsData, reasonsData, riskDistData] = await Promise.all([
+        const [metricsData, churnTrendData, riskDistData, valueDistData] = await Promise.all([
           analyticsAPI.getMetrics(),
           analyticsAPI.getChurnTrend(),
-          analyticsAPI.getSegmentsDistribution(),
-          analyticsAPI.getChurnReasons(),
-          analyticsAPI.getRiskDistribution()
+          analyticsAPI.getRiskDistribution(),
+          analyticsAPI.getValueDistribution()
         ])
 
         setMetrics(metricsData)
-        
+
         // Transform churn trend data for display
         setChurnData(churnTrendData.map(item => ({
           month: item.month,
@@ -43,22 +41,14 @@ const Analytics = () => {
           retention: item.retentionRate
         })))
 
-        // Transform segments data with colors
-        setSegments(segmentsData.map((seg, idx) => ({
-          ...seg,
-          name: seg.name,
-          count: seg.value,
-          color: ['#4f46e5', '#06b6d4', '#10b981', '#ef4444', '#f59e0b'][idx % 5]
+        // Transform risk data for display with colors
+        setRiskData(riskDistData.map((item, idx) => ({
+          name: item.name,
+          count: item.value,
+          color: ['#10b981', '#f59e0b', '#ef4444', '#991b1b'][idx % 4]
         })))
 
-        setChurnReasons(reasonsData)
-        
-        // Transform risk data for display
-        setRiskData(riskDistData.map(item => ({
-          range: item.name,
-          count: item.value,
-          percentage: Math.round((item.value / riskDistData.reduce((sum, r) => sum + r.value, 0)) * 100)
-        })))
+        setValueData(valueDistData)
 
         setLoading(false)
       } catch (err) {
@@ -89,8 +79,8 @@ const Analytics = () => {
   const SimpleBarChart = ({ data, title, dataKey }) => {
     const maxValue = Math.max(...data.map(d => d[dataKey]))
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{title}</h3>
         <div className="space-y-4">
           {data.map((item, idx) => (
             <div key={idx}>
@@ -98,9 +88,9 @@ const Analytics = () => {
                 <span className="text-gray-700 dark:text-gray-300">{item.month || item.range || item.reason}</span>
                 <span className="font-semibold text-gray-900 dark:text-white">{item[dataKey]}</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div
-                  className="bg-indigo-600 h-2 rounded-full transition-all"
+                  className="bg-indigo-600 dark:bg-indigo-500 h-2 rounded-full transition-all"
                   style={{ width: `${(item[dataKey] / maxValue) * 100}%` }}
                 ></div>
               </div>
@@ -117,20 +107,20 @@ const Analytics = () => {
     )
     
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{title}</h3>
         <div className="space-y-4">
           {data.map((item, idx) => (
             <div key={idx}>
               <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-700">{item.month}</span>
+                <span className="text-gray-700 dark:text-gray-300">{item.month}</span>
                 <div className="space-x-4">
                   <span style={{ color: color1 }} className="font-semibold">{lineKey1}: {item[lineKey1]}%</span>
                   <span style={{ color: color2 }} className="font-semibold">{lineKey2}: {item[lineKey2]}%</span>
                 </div>
               </div>
               <div className="flex gap-2 h-2">
-                <div className="flex-1 bg-gray-200 rounded-full overflow-hidden">
+                <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                   <div
                     className="h-full transition-all"
                     style={{
@@ -139,7 +129,7 @@ const Analytics = () => {
                     }}
                   ></div>
                 </div>
-                <div className="flex-1 bg-gray-200 rounded-full overflow-hidden">
+                <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                   <div
                     className="h-full transition-all"
                     style={{
@@ -161,8 +151,8 @@ const Analytics = () => {
     let currentAngle = 0
 
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{title}</h3>
         <div className="flex items-center gap-8">
           <svg width="150" height="150" viewBox="0 0 150 150" className="flex-shrink-0">
             {data.map((item, idx) => {
@@ -200,7 +190,7 @@ const Analytics = () => {
                   className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: item.color }}
                 ></div>
-                <span className="text-sm text-gray-700">{item.name}: {item.count}</span>
+                <span className="text-sm text-gray-700 dark:text-gray-300">{item.name}: {item.count}</span>
               </div>
             ))}
           </div>
@@ -238,16 +228,12 @@ const Analytics = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    
+    <Layout activePage="analytics">
+    <div className="py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="text-indigo-600 hover:text-indigo-700 text-sm font-medium mb-4"
-          >
-            ← Back to Dashboard
-          </button>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Analytics & Insights</h1>
           <p className="text-gray-600 dark:text-gray-300 mt-2">Customer metrics, churn analysis, and retention insights</p>
         </div>
@@ -289,11 +275,11 @@ const Analytics = () => {
               icon={<span className="text-2xl">💰</span>}
             />
             <MetricCard
-              title="Emails Sent"
-              value={metrics.emailsSent.toLocaleString()}
-              subtitle="Total campaigns"
+              title="Total Batches"
+              value={metrics.total_batches || 0}
+              subtitle="Prediction batches analyzed"
               color="#8b5cf6"
-              icon={<span className="text-2xl">📧</span>}
+              icon={<span className="text-2xl">📊</span>}
             />
           </div>
         )}
@@ -312,42 +298,57 @@ const Analytics = () => {
             />
           )}
 
-          {/* Segment Distribution */}
-          {segments && (
-            <PieChart
-              data={segments}
-              title="Customer Segment Distribution"
-            />
-          )}
-
-          {/* Churn Reasons */}
-          {churnReasons && (
-            <SimpleBarChart
-              data={churnReasons}
-              title="Top Churn Reasons"
-              dataKey="count"
-            />
-          )}
-
           {/* Risk Distribution */}
           {riskData && (
-            <SimpleBarChart
+            <PieChart
               data={riskData}
               title="Customer Risk Distribution"
+            />
+          )}
+
+          {/* Value Distribution */}
+          {valueData && (
+            <SimpleBarChart
+              data={valueData}
+              title="Customer Value Distribution"
               dataKey="count"
             />
           )}
         </div>
 
+        {/* No Data Message */}
+        {metrics && metrics.total_batches === 0 && (
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">ℹ️</span>
+              <div>
+                <h3 className="font-semibold text-yellow-900 dark:text-yellow-200 mb-2">
+                  No Prediction Data Available
+                </h3>
+                <p className="text-sm text-yellow-800 dark:text-yellow-300 mb-3">
+                  Upload prediction data to see analytics and customer insights.
+                </p>
+                <button
+                  onClick={() => navigate('/predictions')}
+                  className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition text-sm font-medium"
+                >
+                  Go to Predictions
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Data Source Info */}
-        <div style={{ backgroundColor: '#eff6ff', border: '1px solid #93c5fd', borderRadius: '8px', padding: '15px' }}>
-          <p style={{ margin: 0, fontSize: '14px', color: '#1e40af' }}>
-            <strong>ℹ️ Real Data:</strong> This page is displaying live data from the backend API. 
-            All metrics, trends, and distributions are fetched from the analytics endpoints.
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-700 rounded-lg p-4">
+          <p className="text-sm text-blue-900 dark:text-blue-200">
+            <strong>ℹ️ Real Data:</strong> Analytics are calculated from real prediction batches.
+            Churn rate is based on customers with &gt;50% churn probability, and values are from RFM monetary analysis.
           </p>
         </div>
       </div>
     </div>
+  </Layout>
   )
 }
 

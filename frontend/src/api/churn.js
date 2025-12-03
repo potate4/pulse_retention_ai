@@ -158,56 +158,18 @@ export const churnAPI = {
   },
 
   /**
-   * Step 5: Segment customers based on predictions
+   * Get all customers from prediction batches with optional risk segment filter
    * @param {string} orgId - Organization UUID
-   * @param {string} batchId - Optional batch ID to segment specific batch
-   * @returns {Promise} Segmentation results
+   * @param {string} riskSegment - Optional risk segment filter (Low, Medium, High, Critical)
+   * @param {number} limit - Number of customers to return
+   * @param {number} offset - Pagination offset
+   * @returns {Promise} List of customers with prediction data
    */
-  segmentCustomers: async (orgId, batchId = null) => {
-    const response = await client.post(
-      `/segmentation/organizations/${orgId}/segment`,
-      null,
-    )
-    return response.data
-  },
-
-  /**
-   * Step 6: Analyze customer behaviors
-   * @param {string} orgId - Organization UUID
-   * @param {number} limit - Optional limit on customers to process
-   * @returns {Promise} Behavior analysis results
-   */
-  analyzeBehaviors: async (orgId, limit = null) => {
-    const response = await client.post(
-      `/behavior/organizations/${orgId}/analyze-behaviors`,
-      null,
-      {
-        params: limit ? { limit } : {}
-      }
-    )
-    return response.data
-  },
-
-  /**
-   * Get segment distribution for organization
-   * @param {string} orgId - Organization UUID
-   * @returns {Promise} Segment distribution
-   */
-  getSegmentDistribution: async (orgId) => {
+  getPredictionCustomers: async (orgId, riskSegment = null, limit = 100, offset = 0) => {
+    const params = new URLSearchParams({ limit: limit.toString(), offset: offset.toString() })
+    if (riskSegment) params.append('risk_segment', riskSegment)
     const response = await client.get(
-      `/segmentation/organizations/${orgId}/segments`
-    )
-    return response.data
-  },
-
-  /**
-   * Get behavior insights for organization
-   * @param {string} orgId - Organization UUID
-   * @returns {Promise} Behavior insights
-   */
-  getBehaviorInsights: async (orgId) => {
-    const response = await client.get(
-      `/behavior/organizations/${orgId}/behavior-insights`
+      `/churn/v2/organizations/${orgId}/prediction-customers?${params.toString()}`
     )
     return response.data
   }

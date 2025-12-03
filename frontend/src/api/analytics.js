@@ -10,28 +10,10 @@ export const analyticsAPI = {
   },
 
   /**
-   * Get monthly churn trend data
+   * Get churn rate for each prediction batch (trend over time)
    */
-  getChurnTrend: async (months = 6) => {
-    const response = await client.get('/analytics/churn-trend', {
-      params: { months }
-    })
-    return response.data
-  },
-
-  /**
-   * Get customer distribution across segments
-   */
-  getSegmentsDistribution: async () => {
-    const response = await client.get('/analytics/segments-distribution')
-    return response.data
-  },
-
-  /**
-   * Get top reasons for customer churn
-   */
-  getChurnReasons: async (limit = 5) => {
-    const response = await client.get('/analytics/churn-reasons', {
+  getChurnTrend: async (limit = 12) => {
+    const response = await client.get('/analytics/churn-by-batch', {
       params: { limit }
     })
     return response.data
@@ -42,6 +24,14 @@ export const analyticsAPI = {
    */
   getRiskDistribution: async () => {
     const response = await client.get('/analytics/risk-distribution')
+    return response.data
+  },
+
+  /**
+   * Get distribution of customers by monetary value ranges
+   */
+  getValueDistribution: async () => {
+    const response = await client.get('/analytics/customer-value-distribution')
     return response.data
   },
 

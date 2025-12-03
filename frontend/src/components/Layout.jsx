@@ -43,7 +43,7 @@ const Layout = ({ children, activePage }) => {
   }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f8f9fa' }}>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div
         style={{
@@ -149,7 +149,7 @@ const Layout = ({ children, activePage }) => {
         </div>
 
         {/* Main Content */}
-        <div style={{ flex: 1, padding: '40px', overflowY: 'auto' }}>
+        <div className="flex-1 p-10 overflow-y-auto bg-gray-50 dark:bg-gray-900">
           {children}
         </div>
       </div>

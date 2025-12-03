@@ -119,24 +119,30 @@ class EmailTemplateService:
         Returns:
             Template with replaced values
         """
+        if not template:
+            return ""
+            
         result = template
         
         # Replace basic customer fields
         replacements = {
-            "name": customer_data.get("name", "Valued Customer"),
-            "email": customer_data.get("email", ""),
-            "phone": customer_data.get("phone", ""),
-            "segment": customer_data.get("segment_id", ""),
-            "churn_score": str(customer_data.get("churn_score", 0))
+            "name": customer_data.get("name") or "Valued Customer",
+            "email": customer_data.get("email") or "",
+            "phone": customer_data.get("phone") or "",
+            "segment": customer_data.get("segment_id") or "",
+            "churn_score": str(customer_data.get("churn_score") or 0)
         }
         
-        # Add custom fields
+        # Add custom fields - handle None values
         custom_fields = customer_data.get("custom_fields", {})
-        replacements.update({k: str(v) for k, v in custom_fields.items()})
+        if custom_fields:
+            for k, v in custom_fields.items():
+                replacements[k] = str(v) if v is not None else ""
         
-        # Replace all placeholders
+        # Replace all placeholders - ensure value is never None
         for key, value in replacements.items():
-            result = result.replace(f"{{{key}}}", value)
+            if value is not None:
+                result = result.replace(f"{{{key}}}", str(value))
         
         return result
     
@@ -148,6 +154,7 @@ class EmailTemplateService:
     ) -> Dict[str, str]:
         """
         Generate personalized email template for a customer.
+        Returns a simple hardcoded message that can be edited.
         
         Args:
             customer: Customer data
@@ -156,29 +163,35 @@ class EmailTemplateService:
             
         Returns:
             Dict with subject, html_body, text_body
-            
-        TODO: Replace with API call to teammate's AI service:
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    f"{AI_SERVICE_URL}/api/generate-template",
-                    json={
-                        "customer": customer,
-                        "segment_id": segment_id,
-                        "extra_params": extra_params or {}
-                    }
-                )
-                return response.json()
         """
-        # Use segment_id from customer if not provided
-        if not segment_id:
-            segment_id = customer.get("segment_id", "s3")
-        
-        # Get mock template
-        template = EmailTemplateService.get_mock_template(segment_id)
-        
-        # Apply placeholders
+        # Return hardcoded simple message
         return {
-            "subject": EmailTemplateService.apply_placeholders(template["subject"], customer),
-            "html_body": EmailTemplateService.apply_placeholders(template["html_body"], customer),
-            "text_body": EmailTemplateService.apply_placeholders(template["text_body"], customer)
+            "subject": "We'd Love to Have You Back!",
+            "html_body": """
+            <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #2c3e50;">Hello Valued Customer,</h2>
+                <p>We noticed you haven't been with us lately, and we wanted to reach out to see how we can help.</p>
+                <p>We value your business and would love to have you back. As a token of our appreciation, we're offering you a special discount on your next purchase.</p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="#" style="background-color: #3498db; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">Claim Your Offer</a>
+                </div>
+                <p>If you have any questions or concerns, please don't hesitate to reach out to us. We're here to help!</p>
+                <p style="color: #7f8c8d; font-size: 14px; margin-top: 30px;">
+                    Best regards,<br>
+                    The Team
+                </p>
+            </body>
+            </html>
+            """,
+            "text_body": """Hello Valued Customer,
+
+We noticed you haven't been with us lately, and we wanted to reach out to see how we can help.
+
+We value your business and would love to have you back. As a token of our appreciation, we're offering you a special discount on your next purchase.
+
+If you have any questions or concerns, please don't hesitate to reach out to us. We're here to help!
+
+Best regards,
+The Team"""
         }

@@ -888,3 +888,65 @@ async def list_prediction_batches(
             for batch in batches
         ]
     }
+
+
+@router.get("/organizations/{org_id}/prediction-customers")
+async def get_prediction_customers(
+    org_id: uuid.UUID,
+    risk_segment: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0,
+    db: Session = Depends(get_db)
+):
+    """
+    Get all customers from prediction batches with optional risk segment filtering.
+    
+    Args:
+        org_id: Organization UUID
+        risk_segment: Optional filter by risk segment (Low, Medium, High, Critical)
+        limit: Number of customers to return (default: 100)
+        offset: Pagination offset (default: 0)
+    
+    Returns:
+        List of customers with prediction data from all batches
+    """
+    org = get_organization(org_id, db)
+    
+    # Build query for CustomerPrediction with join to PredictionBatch
+    query = db.query(CustomerPrediction, PredictionBatch).join(
+        PredictionBatch,
+        CustomerPrediction.batch_id == PredictionBatch.id
+    ).filter(
+        CustomerPrediction.organization_id == org_id
+    )
+    
+    # Apply risk segment filter if provided
+    if risk_segment:
+        query = query.filter(CustomerPrediction.risk_segment == risk_segment)
+    
+    # Get total count before pagination
+    total = query.count()
+    
+    # Apply pagination and ordering
+    results = query.order_by(
+        CustomerPrediction.predicted_at.desc()
+    ).limit(limit).offset(offset).all()
+    
+    # Format response
+    customers = []
+    for pred, batch in results:
+        customers.append({
+            "customer_id": pred.external_customer_id,
+            "churn_probability": float(pred.churn_probability),
+            "risk_segment": pred.risk_segment,
+            "batch_id": str(pred.batch_id),
+            "batch_name": batch.batch_name,
+            "predicted_at": pred.predicted_at.isoformat() if pred.predicted_at else None
+        })
+    
+    return {
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "customers": customers
+    }
