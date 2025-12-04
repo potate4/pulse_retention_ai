@@ -148,9 +148,7 @@ def get_or_generate_widget_message(
     db: Session
 ) -> Optional[Dict]:
     """
-    Get cached widget message or generate new one if expired/missing.
-
-    Uses 7-day caching strategy per (org_id, segment, risk_level) combination.
+    Generate widget message (CACHING DISABLED FOR DEMO).
 
     Args:
         organization_id: Organization UUID
@@ -161,61 +159,13 @@ def get_or_generate_widget_message(
     Returns:
         Dict with 'title', 'message', 'cta_text', 'cta_link' or None
     """
-    # Query cache
-    cache_entry = db.query(WidgetMessageCache).filter(
-        WidgetMessageCache.organization_id == organization_id,
-        WidgetMessageCache.segment == segment,
-        WidgetMessageCache.risk_level == risk_level
-    ).first()
-
-    # Check if cache is valid
-    if cache_entry and not cache_entry.is_expired():
-        print(f"[Widget Message Cache] HIT for {segment}/{risk_level}")
-        return {
-            'title': cache_entry.title,
-            'message': cache_entry.message,
-            'cta_text': cache_entry.cta_text,
-            'cta_link': cache_entry.cta_link
-        }
-
-    # Cache miss or expired - generate new message
-    print(f"[Widget Message Cache] MISS for {segment}/{risk_level} - generating...")
+    # CACHING DISABLED FOR DEMO - Generate fresh message every time
+    print(f"[Widget Message Generator] Generating message for {segment}/{risk_level}")
     message_data = generate_llm_widget_message(segment, risk_level, organization_id)
 
     if not message_data:
+        print(f"[Widget Message Generator] Failed to generate message")
         return None
 
-    # Save to cache
-    try:
-        if cache_entry:
-            # Update existing entry
-            cache_entry.title = message_data['title']
-            cache_entry.message = message_data['message']
-            cache_entry.cta_text = message_data['cta_text']
-            cache_entry.cta_link = message_data['cta_link']
-            cache_entry.generated_at = datetime.utcnow()
-            cache_entry.expires_at = datetime.utcnow() + timedelta(days=7)
-        else:
-            # Create new entry
-            cache_entry = WidgetMessageCache(
-                organization_id=organization_id,
-                segment=segment,
-                risk_level=risk_level,
-                title=message_data['title'],
-                message=message_data['message'],
-                cta_text=message_data['cta_text'],
-                cta_link=message_data['cta_link'],
-                generated_at=datetime.utcnow(),
-                expires_at=datetime.utcnow() + timedelta(days=7)
-            )
-            db.add(cache_entry)
-
-        db.commit()
-        print(f"[Widget Message Cache] Saved for {segment}/{risk_level}")
-        return message_data
-
-    except Exception as e:
-        db.rollback()
-        print(f"[Widget Message Cache] Failed to save: {str(e)}")
-        # Return generated message even if caching fails
-        return message_data
+    print(f"[Widget Message Generator] Successfully generated for {segment}/{risk_level}")
+    return message_data

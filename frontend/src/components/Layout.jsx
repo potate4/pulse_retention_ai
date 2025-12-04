@@ -15,6 +15,7 @@ const Layout = ({ children, activePage }) => {
     if (path === '/churn-prediction') return 'churn'
     if (path === '/predictions') return 'predictions'
     if (path === '/email-campaign') return 'email'
+    if (path === '/widget-campaign') return 'widget'
     if (path === '/email-history') return 'history'
     if (path === '/analytics') return 'analytics'
     if (path === '/roi-dashboard') return 'roi'
@@ -32,6 +33,7 @@ const Layout = ({ children, activePage }) => {
     { id: 'churn', label: 'Churn Prediction', icon: '🎯', path: '/churn-prediction' },
     { id: 'predictions', label: 'Predictions', icon: '📋', path: '/predictions' },
     { id: 'email', label: 'Email Campaign', icon: '📧', path: '/email-campaign' },
+    { id: 'widget', label: 'Widget Campaign', icon: '🔔', path: '/widget-campaign' },
     { id: 'history', label: 'Email History', icon: '📜', path: '/email-history' },
     { id: 'analytics', label: 'Analytics', icon: '📈', path: '/analytics' },
     { id: 'roi', label: 'ROI Dashboard', icon: '💰', path: '/roi-dashboard' },

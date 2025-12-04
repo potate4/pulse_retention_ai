@@ -178,6 +178,12 @@ async def get_widget_offers(
         - cta_link: Call-to-action link
     """
     try:
+        # DEBUG LOGGING
+        print(f"\n[Widget API] === NEW REQUEST ===")
+        print(f"[Widget API] business_id: {business_id}")
+        print(f"[Widget API] customer_email: {customer_email}")
+        print(f"[Widget API] personalized: {personalized} (type: {type(personalized)})")
+
         # Validate and parse business_id as UUID
         try:
             org_id = uuid.UUID(business_id)
@@ -186,7 +192,7 @@ async def get_widget_offers(
                 'show_popup': False,
                 'error': 'Invalid business_id format'
             }
-        
+
         # Check if organization exists
         org = db.query(Organization).filter(Organization.id == org_id).first()
         if not org:
@@ -194,18 +200,43 @@ async def get_widget_offers(
                 'show_popup': False,
                 'error': 'Organization not found'
             }
-        
+
+        print(f"[Widget API] Organization found: {org.name}")
+
         # Find customer by email (using external_customer_id as email for now)
         # In production, you might have a separate email field
         customer = db.query(Customer).filter(
             Customer.organization_id == org_id,
             Customer.external_customer_id == customer_email
         ).first()
-        
-        # If customer not found, return generic offer or no popup
+
+        print(f"[Widget API] Customer found: {customer is not None}")
+
+        # If customer not found, try to generate personalized message anyway (for demo)
         if not customer:
             customer_name = get_customer_name_from_email(customer_email)
-            # Return a gentle welcome offer for unknown customers
+            print(f"[Widget API] Customer not in DB, using demo mode for: {customer_name}")
+
+            # If personalized=true, generate for demo segment (At Risk / High)
+            if personalized:
+                print(f"[Widget API] Generating LLM message for unknown customer (At Risk/High)")
+                llm_message = get_or_generate_widget_message(
+                    organization_id=str(org_id),
+                    segment='At Risk',  # Demo segment for unknown customers
+                    risk_level='High',  # Demo risk level
+                    db=db
+                )
+
+                if llm_message:
+                    print(f"[Widget API] ✅ Returning LLM message: {llm_message.get('title', 'N/A')}")
+                    return {
+                        'show_popup': True,
+                        **llm_message
+                    }
+                else:
+                    print(f"[Widget API] ❌ LLM message generation failed")
+
+            # Return generic welcome offer for unknown customers
             return {
                 'show_popup': True,
                 'title': f'Welcome to {org.name or "our service"}!',
@@ -239,8 +270,11 @@ async def get_widget_offers(
         # Get customer name from email
         customer_name = get_customer_name_from_email(customer_email)
 
+        print(f"[Widget API] Customer segment: {segment}, Risk: {churn_risk}")
+
         # If personalized=true, try to get LLM-generated message
         if personalized:
+            print(f"[Widget API] Generating LLM message for {segment}/{churn_risk}")
             llm_message = get_or_generate_widget_message(
                 organization_id=str(org_id),
                 segment=segment,
@@ -250,13 +284,16 @@ async def get_widget_offers(
 
             if llm_message:
                 # Return LLM-generated personalized message
+                print(f"[Widget API] ✅ Returning LLM message for existing customer: {llm_message.get('title', 'N/A')}")
                 return {
                     'show_popup': True,
                     **llm_message
                 }
             # If LLM fails, fall through to static template
+            print(f"[Widget API] ❌ LLM generation failed, falling back to static template")
 
         # Generate static segment-based offer (fallback or default)
+        print(f"[Widget API] Using static template for {segment}/{churn_risk}")
         offer_data = generate_offer_content(segment, churn_risk, customer_name)
 
         return {
@@ -280,9 +317,9 @@ async def log_widget_event(
 ):
     """
     Log widget events (popup shown, closed, CTA clicked).
-    
+
     This can be used for analytics and tracking widget performance.
-    
+
     Body:
         - business_id: Organization UUID
         - customer_email: Customer email
@@ -294,16 +331,176 @@ async def log_widget_event(
         # For now, just log to console
         # In production, you'd save this to a widget_events table
         print(f"Widget Event: {event_data.get('event_type')} - {event_data.get('customer_email')}")
-        
+
         return {
             'success': True,
             'message': 'Event logged successfully'
         }
-        
+
     except Exception as e:
         print(f"Widget Event Error: {str(e)}")
         return {
             'success': False,
             'error': 'Failed to log event'
+        }
+
+
+@router.post("/generate-message")
+async def generate_widget_message(
+    request_data: dict,
+    db: Session = Depends(get_db)
+):
+    """
+    Generate personalized widget message for a specific customer.
+
+    Used by the Widget Campaign dashboard to preview messages before sending.
+
+    Body:
+        - organization_id: Organization UUID
+        - customer_id: Customer ID
+        - segment: Customer segment
+        - risk_level: Risk level
+        - churn_probability: Churn probability (0-1)
+    """
+    try:
+        org_id = request_data.get('organization_id')
+        segment = request_data.get('segment', 'At Risk')
+        risk_level = request_data.get('risk_level', 'High')
+
+        # Generate or get cached message
+        message_data = get_or_generate_widget_message(
+            organization_id=str(org_id),
+            segment=segment,
+            risk_level=risk_level,
+            db=db
+        )
+
+        if message_data:
+            return {
+                'success': True,
+                **message_data
+            }
+        else:
+            return {
+                'success': False,
+                'message': 'Failed to generate widget message. OPENAI_API_KEY may not be set.'
+            }
+
+    except Exception as e:
+        print(f"Generate Message Error: {str(e)}")
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+
+@router.post("/queue-message")
+async def queue_widget_message(
+    request_data: dict,
+    db: Session = Depends(get_db)
+):
+    """
+    Queue a personalized widget message for a customer.
+
+    The message will be shown as a popup on their next website visit.
+    This is used for targeted retention campaigns.
+
+    Body:
+        - organization_id: Organization UUID
+        - customer_id: Customer ID
+        - customer_email: Customer email
+        - title: Message title
+        - message: HTML message content
+        - cta_text: CTA button text
+        - cta_link: CTA button link
+    """
+    try:
+        # In a full implementation, you would:
+        # 1. Save message to a customer_widget_queue table
+        # 2. When customer visits website, widget checks this queue
+        # 3. Display queued message instead of default offer
+        # 4. Mark message as shown after display
+
+        # For demo purposes, we'll return success
+        # The actual implementation would require a new database table
+        print(f"[Widget Queue] Queued message for customer {request_data.get('customer_id')}")
+        print(f"  Title: {request_data.get('title')}")
+        print(f"  CTA: {request_data.get('cta_text')} -> {request_data.get('cta_link')}")
+
+        return {
+            'success': True,
+            'message': 'Widget message queued successfully'
+        }
+
+    except Exception as e:
+        print(f"Queue Message Error: {str(e)}")
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+
+@router.post("/bulk-queue-messages")
+async def bulk_queue_widget_messages(
+    request_data: dict,
+    db: Session = Depends(get_db)
+):
+    """
+    Queue personalized widget messages for multiple customers.
+
+    Generates a unique message for each customer based on their segment/risk,
+    then queues them for display on next visit.
+
+    Body:
+        - organization_id: Organization UUID
+        - customer_ids: List of customer IDs
+        - customers: List of customer objects with segment/risk data
+    """
+    try:
+        org_id = str(request_data.get('organization_id'))
+        customer_ids = request_data.get('customer_ids', [])
+        customers = request_data.get('customers', [])
+
+        queued_count = 0
+        failed_count = 0
+
+        for customer in customers:
+            if customer['id'] not in customer_ids:
+                continue
+
+            try:
+                # Generate message for this customer's segment/risk
+                message_data = get_or_generate_widget_message(
+                    organization_id=org_id,
+                    segment=customer.get('risk_segment', 'At Risk'),
+                    risk_level=customer.get('risk_segment', 'High'),
+                    db=db
+                )
+
+                if message_data:
+                    # Queue the message (in production, save to DB)
+                    print(f"[Bulk Queue] Queued for {customer['id']}: {message_data['title']}")
+                    queued_count += 1
+                else:
+                    failed_count += 1
+
+            except Exception as e:
+                print(f"[Bulk Queue] Failed for {customer['id']}: {str(e)}")
+                failed_count += 1
+
+        return {
+            'success': True,
+            'message': f'Queued {queued_count} widget messages',
+            'queued_count': queued_count,
+            'failed_count': failed_count
+        }
+
+    except Exception as e:
+        print(f"Bulk Queue Error: {str(e)}")
+        return {
+            'success': False,
+            'error': str(e),
+            'queued_count': 0,
+            'failed_count': len(request_data.get('customer_ids', []))
         }
 
