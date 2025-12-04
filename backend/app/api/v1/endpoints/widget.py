@@ -13,6 +13,7 @@ from app.db.models.customer import Customer
 from app.db.models.customer_segment import CustomerSegment
 from app.db.models.churn_prediction import ChurnPrediction
 from app.services.segmentation.rules import SEGMENT_DEFINITIONS
+from app.services.behavior_analysis.widget_message_generator import get_or_generate_widget_message
 
 
 router = APIRouter()
@@ -155,18 +156,20 @@ def generate_offer_content(segment: str, churn_risk: str, customer_name: str) ->
 async def get_widget_offers(
     business_id: str = Query(..., description="Organization UUID"),
     customer_email: str = Query(..., description="Customer email address"),
+    personalized: bool = Query(False, description="Use LLM-generated personalized messages"),
     db: Session = Depends(get_db)
 ):
     """
     Public endpoint to fetch personalized widget offers.
-    
+
     This endpoint does not require authentication and is designed to be called
     by the embedded widget on customer websites.
-    
+
     Query Parameters:
         - business_id: Organization UUID
         - customer_email: Customer email address
-    
+        - personalized: bool - If true, uses LLM-generated messages (default: false)
+
     Returns:
         - show_popup: Whether to display the popup
         - title: Popup title
@@ -232,13 +235,30 @@ async def get_widget_offers(
         # Extract segment and risk level
         segment = segment_data.segment if segment_data else 'Promising'
         churn_risk = segment_data.churn_risk_level if segment_data else 'Low'
-        
+
         # Get customer name from email
         customer_name = get_customer_name_from_email(customer_email)
-        
-        # Generate personalized offer
+
+        # If personalized=true, try to get LLM-generated message
+        if personalized:
+            llm_message = get_or_generate_widget_message(
+                organization_id=str(org_id),
+                segment=segment,
+                risk_level=churn_risk,
+                db=db
+            )
+
+            if llm_message:
+                # Return LLM-generated personalized message
+                return {
+                    'show_popup': True,
+                    **llm_message
+                }
+            # If LLM fails, fall through to static template
+
+        # Generate static segment-based offer (fallback or default)
         offer_data = generate_offer_content(segment, churn_risk, customer_name)
-        
+
         return {
             'show_popup': True,
             **offer_data

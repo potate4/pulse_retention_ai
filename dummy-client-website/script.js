@@ -120,6 +120,7 @@
     widgetScript.setAttribute('data-business-id', businessId);
     widgetScript.setAttribute('data-email', email);
     widgetScript.setAttribute('data-api-url', 'http://127.0.0.1:8000');
+    widgetScript.setAttribute('data-personalized', 'true'); // Enable LLM-generated personalized messages
 
     // Add to document
     document.body.appendChild(widgetScript);
@@ -127,6 +128,7 @@
     console.log('[Client Website] Widget script injected successfully');
     console.log('[Client Website] Business ID:', businessId);
     console.log('[Client Website] Customer Email:', email);
+    console.log('[Client Website] Personalized Messages: ENABLED');
   }
 
   // Setup logout button

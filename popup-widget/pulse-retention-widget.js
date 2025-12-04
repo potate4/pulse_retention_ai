@@ -11,10 +11,12 @@
   const businessId = currentScript?.getAttribute('data-business-id') || 'UNKNOWN';
   const customerEmail = currentScript?.getAttribute('data-email') || 'UNKNOWN';
   const apiUrl = currentScript?.getAttribute('data-api-url') || 'http://127.0.0.1:5000';
+  const usePersonalized = currentScript?.getAttribute('data-personalized') === 'true';
 
   console.log('[Pulse Retention Widget] Business ID:', businessId);
   console.log('[Pulse Retention Widget] Customer Email:', customerEmail);
   console.log('[Pulse Retention Widget] API URL:', apiUrl);
+  console.log('[Pulse Retention Widget] Personalized:', usePersonalized);
 
   // Inject CSS styles dynamically
   function injectStyles() {
@@ -233,8 +235,8 @@
 
   // Fetch popup data from backend
   function fetchPopupData() {
-    const url = `${apiUrl}/api/v1/widget/offers?business_id=${encodeURIComponent(businessId)}&customer_email=${encodeURIComponent(customerEmail)}`;
-    
+    const url = `${apiUrl}/api/v1/widget/offers?business_id=${encodeURIComponent(businessId)}&customer_email=${encodeURIComponent(customerEmail)}&personalized=${usePersonalized}`;
+
     return fetch(url)
       .then(response => {
         if (!response.ok) {
