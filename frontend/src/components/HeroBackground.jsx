@@ -1,11 +1,19 @@
 const HeroBackground = () => {
   return (
     <div className="absolute inset-0 overflow-hidden -z-10">
-      {/* Base Gradient Background */}
+      {/* Base Gradient Background - Light Mode */}
       <div 
-        className="absolute inset-0"
+        className="absolute inset-0 dark:hidden"
         style={{
           background: 'linear-gradient(135deg, #DDEAF7 0%, #F9DDE8 50%, #FFFFFF 100%)',
+        }}
+      />
+      
+      {/* Base Gradient Background - Dark Mode */}
+      <div 
+        className="absolute inset-0 hidden dark:block"
+        style={{
+          background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
         }}
       />
 
