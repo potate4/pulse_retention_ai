@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Widget - Simple Demo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .info-box h3 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        .status {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #10b981;
+            color: white;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+        code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #e11d48;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Pulse Retention Widget Demo</h1>
+        <p class="subtitle">Simple test page for the personalized widget</p>
+        
+        <div class="status">✓ Widget Active</div>
+        
+        <div class="info-box">
+            <h3>Widget Configuration</h3>
+            <p><strong>Business ID:</strong> <code>586a35d8-eb2c-422c-8c7c-34c5f0d2a22a</code></p>
+            <p><strong>Customer Email:</strong> <code>test@example.com</code></p>
+            <p><strong>API URL:</strong> <code>http://127.0.0.1:8000</code></p>
+        </div>
+
+        <div class="info-box">
+            <h3>📋 Instructions</h3>
+            <ol>
+                <li>Make sure your backend is running on <code>http://127.0.0.1:8000</code></li>
+                <li>Make sure you have prediction data with churn probability and features</li>
+                <li>The widget will automatically show if conditions are met</li>
+                <li>Open browser console (F12) to see widget debug logs</li>
+            </ol>
+        </div>
+
+        <div class="info-box">
+            <h3>🔍 How to Test</h3>
+            <p>The widget checks for:</p>
+            <ul>
+                <li>✓ Customer email in the system</li>
+                <li>✓ High churn risk (> threshold)</li>
+                <li>✓ Available personalized offers</li>
+            </ul>
+            <p>If all conditions are met, a popup will appear automatically!</p>
+        </div>
+
+        <h2 style="margin-top: 40px;">Sample Content</h2>
+        <p>This is a demo e-commerce website. The Pulse Retention widget will show personalized offers to at-risk customers.</p>
+        
+        <div style="margin-top: 30px; padding: 20px; background: #fef3c7; border-radius: 8px;">
+            <h3 style="margin-top: 0;">🎁 Special Offers Section</h3>
+            <p>Browse our latest deals and promotions. As a valued customer, you might receive special personalized offers!</p>
+        </div>
+    </div>
+
+    <!-- Pulse Retention Widget Script -->
+    <script 
+        src="./popup-widget/pulse-retention-widget.js"
+        data-business-id="586a35d8-eb2c-422c-8c7c-34c5f0d2a22a"
+        data-email="test@example.com"
+        data-api-url="http://127.0.0.1:8000">
+    </script>
+
+    <script>
+        console.log('=== Widget Test Page Loaded ===');
+        console.log('Check console for widget logs starting with [Pulse Retention Widget]');
+    </script>
+</body>
+</html>
+

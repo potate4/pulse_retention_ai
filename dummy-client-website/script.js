@@ -116,7 +116,7 @@
 
     // Create script element
     const widgetScript = document.createElement('script');
-    widgetScript.src = '../popup-widget/pulse-retention-widget.js';
+    widgetScript.src = 'pulse-retention-widget.js';
     widgetScript.setAttribute('data-business-id', businessId);
     widgetScript.setAttribute('data-email', email);
     widgetScript.setAttribute('data-api-url', 'http://127.0.0.1:8000');

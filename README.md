@@ -666,7 +666,7 @@ See [QUICK_TEST_STEPS.md](QUICK_TEST_STEPS.md) for complete testing workflow.
 
 ---
 
-##  Contributing
+## 🤝 Contributing
 
 We welcome contributions! Please follow these steps:
 
@@ -703,9 +703,21 @@ test: Add tests
 ---
 
 
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+---
 
+## 📞 Support
 
+### Documentation
+- **Full Documentation**: [docs/](docs/)
+- **API Reference**: http://localhost:8000/docs
+
+### Contact
+- **GitHub Issues**: [Report bugs or request features](https://github.com/yourusername/pulse_retention_ai/issues)
+- **Email**: support@pulseretention.com
+
+---
 
 ## 🙏 Acknowledgments
 
@@ -720,7 +732,7 @@ Built with:
 ---
 
 <p align="center">
- 
+  Made with ❤️ by the Pulse Team
   <br>
-  
+  <a href="https://github.com/yourusername/pulse_retention_ai">⭐ Star us on GitHub</a>
 </p>
