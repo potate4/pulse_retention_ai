@@ -9,7 +9,7 @@ const Landing = () => {
   const { isAuthenticated } = useAuthStore()
 
   return (
-    <div className="min-h-screen bg-white dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 relative">
+    <div className="min-h-screen bg-white dark:bg-gray-900 relative">
       {/* Abstract Hero Background */}
       <HeroBackground />
       
@@ -281,7 +281,7 @@ const Landing = () => {
           </div>
 
           {/* Professional Plan */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden transition-transform hover:scale-105 ring-2 ring-purple-500">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden transition-transform hover:scale-105 ring-2 ring-purple-500 relative">
             <div className="h-1.5 bg-gradient-to-r from-purple-500 to-purple-600"></div>
             <div className="absolute top-0 right-0 bg-purple-500 text-white px-3 py-0.5 text-xs font-semibold rounded-bl-lg">
               Most Popular

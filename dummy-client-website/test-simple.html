@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Widget Test - Simple</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .test-card {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+    .status {
+      padding: 10px;
+      border-radius: 5px;
+      margin: 10px 0;
+    }
+    .loading {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      color: #856404;
+    }
+    .success {
+      background: #d4edda;
+      border: 1px solid #28a745;
+      color: #155724;
+    }
+    .error {
+      background: #f8d7da;
+      border: 1px solid #dc3545;
+      color: #721c24;
+    }
+    pre {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 5px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-card">
+    <h1>🔬 Pulse Widget Test Page</h1>
+    <p>Testing the Pulse Retention Widget integration...</p>
+    
+    <div id="status" class="status loading">
+      ⏳ Loading widget... Please wait for popup to appear (2.5 seconds)
+    </div>
+
+    <h3>Test Configuration:</h3>
+    <pre id="config"></pre>
+
+    <h3>Console Logs:</h3>
+    <pre id="logs"></pre>
+  </div>
+
+  <!-- Pulse Widget Script -->
+  <script 
+    src="pulse-retention-widget.js"
+    data-business-id="586a35d8-eb2c-422c-8c7c-34c5f0d2a22a"
+    data-email="test@example.com"
+    data-api-url="http://127.0.0.1:8000"
+  ></script>
+
+  <script>
+    // Display configuration
+    const config = {
+      business_id: '586a35d8-eb2c-422c-8c7c-34c5f0d2a22a',
+      email: 'test@example.com',
+      api_url: 'http://127.0.0.1:8000',
+      endpoint: 'http://127.0.0.1:8000/api/v1/widget/offers'
+    };
+    document.getElementById('config').textContent = JSON.stringify(config, null, 2);
+
+    // Capture console logs
+    const logs = [];
+    const originalLog = console.log;
+    const originalError = console.error;
+
+    console.log = function(...args) {
+      logs.push('[LOG] ' + args.join(' '));
+      updateLogs();
+      originalLog.apply(console, args);
+    };
+
+    console.error = function(...args) {
+      logs.push('[ERROR] ' + args.join(' '));
+      updateLogs();
+      originalError.apply(console, args);
+    };
+
+    function updateLogs() {
+      document.getElementById('logs').textContent = logs.join('\n');
+    }
+
+    // Check for popup after 3 seconds
+    setTimeout(() => {
+      const popup = document.querySelector('.pulse-popup');
+      const overlay = document.querySelector('.pulse-popup-overlay');
+      const status = document.getElementById('status');
+
+      if (popup || overlay) {
+        status.className = 'status success';
+        status.innerHTML = '✅ Success! Widget popup is visible!';
+      } else {
+        status.className = 'status error';
+        status.innerHTML = '❌ Popup not found. Check console logs below and browser DevTools (F12) for errors.';
+      }
+    }, 3000);
+  </script>
+</body>
+</html>
+
+
+

@@ -4,8 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-app.include_router(api_router_v1, prefix="/api/v1") 
-
+# CORS configuration
 origins = [
     "*",  # Allow all origins for widget to work (development mode)
     # "http://localhost:5173",
@@ -14,19 +13,17 @@ origins = [
     # "https://audio.shrobon.com",
 ]
 
-allow_credentials = True
-allow_methods = ["*"]  
-allow_headers = ["*"]  
-expose_headers = ["*"] 
-
-# Add CORS middleware
+# Add CORS middleware FIRST (before routes)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  
-    allow_credentials = allow_credentials,
-    allow_methods=allow_methods,  
-    allow_headers=allow_headers,  
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
+
+# Include routers AFTER middleware
+app.include_router(api_router_v1, prefix="/api/v1")
 # Dummy Endpoint
 @app.get("/")
 async def get_welcome_message():

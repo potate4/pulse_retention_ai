@@ -18,6 +18,7 @@ const Layout = ({ children, activePage }) => {
     if (path === '/email-history') return 'history'
     if (path === '/analytics') return 'analytics'
     if (path === '/roi-dashboard') return 'roi'
+    if (path === '/pricing-billing') return 'pricing'
     return 'dashboard'
   })()
 
@@ -33,7 +34,8 @@ const Layout = ({ children, activePage }) => {
     { id: 'email', label: 'Email Campaign', icon: '📧', path: '/email-campaign' },
     { id: 'history', label: 'Email History', icon: '📜', path: '/email-history' },
     { id: 'analytics', label: 'Analytics', icon: '📈', path: '/analytics' },
-    { id: 'roi', label: 'ROI Dashboard', icon: '💰', path: '/roi-dashboard' }
+    { id: 'roi', label: 'ROI Dashboard', icon: '💰', path: '/roi-dashboard' },
+    { id: 'pricing', label: 'Pricing & Billing', icon: '💳', path: '/pricing-billing' }
   ]
 
   const handleMenuClick = (item) => {

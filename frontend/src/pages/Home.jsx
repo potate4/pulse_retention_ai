@@ -1,11 +1,29 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
+import { paymentAPI } from '../api/payment'
 import Layout from '../components/Layout'
 import ThemeToggle from '../components/ThemeToggle'
 
 const Home = () => {
   const navigate = useNavigate()
   const { user } = useAuthStore()
+  const [subscription, setSubscription] = useState(null)
+  const [loadingSubscription, setLoadingSubscription] = useState(true)
+
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      try {
+        const sub = await paymentAPI.getCurrentSubscription()
+        setSubscription(sub)
+      } catch (error) {
+        console.error('Failed to fetch subscription:', error)
+      } finally {
+        setLoadingSubscription(false)
+      }
+    }
+    fetchSubscription()
+  }, [])
 
   const quickActions = [
     {
@@ -53,7 +71,7 @@ const Home = () => {
       </div>
 
       {/* User Status Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           {/* Account Status Card */}
           <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border-l-4 border-indigo-500">
             <div className="text-gray-600 dark:text-gray-400 text-xs mb-2">
@@ -69,6 +87,44 @@ const Home = () => {
             }`}>
               {user?.is_active ? '✓ Account Active' : '⚠ Account Inactive'}
             </div>
+          </div>
+
+          {/* Current Plan Card */}
+          <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border-l-4 border-purple-500">
+            <div className="text-gray-600 dark:text-gray-400 text-xs mb-2">
+              Current Plan
+            </div>
+            {loadingSubscription ? (
+              <div className="text-sm text-gray-500 dark:text-gray-400">Loading...</div>
+            ) : subscription?.is_active ? (
+              <>
+                <div className="text-2xl font-bold text-gray-900 dark:text-white capitalize">
+                  {subscription.plan || 'No Plan'}
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 capitalize">
+                  {subscription.billing_cycle || ''}
+                </div>
+                <div className={`inline-block text-xs mt-2 px-2 py-1 rounded ${
+                  subscription.is_active
+                    ? 'bg-green-100 dark:bg-green-900 text-gray-600 dark:text-gray-300'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                }`}>
+                  {subscription.is_active ? '✓ Active' : '⚠ Inactive'}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-lg font-bold text-gray-900 dark:text-white">
+                  No Plan
+                </div>
+                <button
+                  onClick={() => navigate('/pricing-billing')}
+                  className="text-xs mt-2 text-purple-600 dark:text-purple-400 hover:underline"
+                >
+                  Choose a plan →
+                </button>
+              </>
+            )}
           </div>
 
           {/* Role Card */}

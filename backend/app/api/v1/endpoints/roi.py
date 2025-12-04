@@ -1,6 +1,7 @@
 """
 ROI/Profit-Calculation API Endpoints
 Calculates real ROI based on churn predictions and RFM monetary values.
+Uses real data from high-risk (churn > 80%), high-value (top 10% monetary score) customers.
 """
 from fastapi import APIRouter, HTTPException, Depends, status, Query
 from typing import List, Dict, Any
@@ -8,9 +9,17 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 import uuid
 
+from app.api.deps import get_db, get_current_active_user
 from app.api.deps import get_current_active_user, get_db
 from app.db.models.user import User
 from app.db.models.prediction_batch import PredictionBatch, CustomerPrediction
+from app.services.roi_calculator import (
+    get_roi_metrics as calc_roi_metrics,
+    get_profit_trend as calc_profit_trend,
+    get_cost_breakdown as calc_cost_breakdown,
+    get_campaign_roi as calc_campaign_roi,
+    get_retention_savings as calc_retention_savings
+)
 
 router = APIRouter()
 
@@ -61,6 +70,12 @@ def calculate_batch_roi(batch_id: uuid.UUID, db: Session) -> Dict[str, Any]:
         'high_risk_count': len(high_risk_customers),
         'high_risk_customers': high_risk_customers
     }
+
+
+def get_current_org_id(current_user: User = Depends(get_current_active_user)) -> uuid.UUID:
+    """Get the organization ID for the current authenticated user.
+    In this system, the organization ID is the same as the user ID."""
+    return current_user.id
 
 
 @router.get("/metrics")

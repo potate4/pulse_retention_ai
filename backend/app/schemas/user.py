@@ -24,6 +24,9 @@ class UserResponse(BaseModel):
     email: str
     role: str
     is_active: bool
+    subscription_plan: Optional[str] = None
+    subscription_status: Optional[str] = None
+    billing_cycle: Optional[str] = None
 
     class Config:
         from_attributes = True  # Updated from orm_mode for Pydantic v2
