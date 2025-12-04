@@ -27,6 +27,13 @@ const Home = () => {
 
   const quickActions = [
     {
+      id: 'csv',
+      title: 'CSV Normalization',
+      description: 'Normalize CSV with LLM',
+      icon: '📝',
+      path: '/csv-normalization',
+    },
+    {
       id: 'email',
       title: 'Email Campaign',
       description: 'Send targeted emails',
