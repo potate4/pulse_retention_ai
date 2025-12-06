@@ -1,0 +1,37 @@
+{
+  "accuracy": 0.7935,
+  "precision": 0.6602,
+  "recall": 0.4572,
+  "specificity": 0.915,
+  "f1_score": 0.5403,
+  "roc_auc": 0.8259,
+  "confusion_matrix": {
+    "true_negatives": 947,
+    "false_positives": 88,
+    "false_negatives": 203,
+    "true_positives": 171
+  },
+  "feature_importance": {},
+  "model_type": "gradient_boosting",
+  "train_samples": 5634,
+  "test_samples": 1409,
+  "total_samples": 7043,
+  "churn_rate": 0.2654,
+  "class_balance": {
+    "non_churned": 5174,
+    "churned": 1869
+  },
+  "feature_scaling": true,
+  "hyperparameter_tuning": true,
+  "cv_scores": {
+    "mean": 0.8175,
+    "std": 0.0178,
+    "scores": [
+      0.7981,
+      0.8455,
+      0.8189,
+      0.8263,
+      0.7988
+    ]
+  }
+}

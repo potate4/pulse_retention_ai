@@ -9,8 +9,8 @@ import {
   HiTrendingUp,
   HiCurrencyDollar,
   HiUser,
-  HiLogout,
-  HiCreditCard
+  HiOutlineLogout ,
+  HiOutlineCreditCard,
 } from 'react-icons/hi'
 import { FiFileText, FiTarget } from 'react-icons/fi'
 
@@ -47,11 +47,11 @@ const Layout = ({ children, activePage }) => {
     { id: 'predictions', label: 'Predictions', icon: HiClipboardList, path: '/predictions' },
     { id: 'csv-normalization', label: 'CSV Normalization', icon: FiFileText, path: '/csv-normalization' },
     { id: 'email', label: 'Email Campaign', icon: HiMail, path: '/email-campaign' },
-    { id: 'widget', label: 'Widget Campaign', icon: HiTrendingUp, path: '/widget-campaign' },
+    { id: 'widget', label: 'Widget Campaign', icon: HiChartBar, path: '/widget-campaign' },
     { id: 'history', label: 'Email History', icon: HiDocumentText, path: '/email-history' },
     { id: 'analytics', label: 'Analytics', icon: HiTrendingUp, path: '/analytics' },
     { id: 'roi', label: 'ROI Dashboard', icon: HiCurrencyDollar, path: '/roi-dashboard' },
-    { id: 'pricing', label: 'Pricing & Billing', icon: HiCreditCard, path: '/pricing-billing' }
+    { id: 'pricing', label: 'Pricing & Billing', icon: HiOutlineCreditCard, path: '/pricing-billing' }
   ]
 
   const handleMenuClick = (item) => {
@@ -251,7 +251,7 @@ const Layout = ({ children, activePage }) => {
                 e.target.style.boxShadow = '0 2px 8px rgba(239, 68, 68, 0.25)'
               }}
             >
-              <HiLogout style={{ fontSize: '16px' }} />
+              <HiOutlineLogout style={{ fontSize: '16px' }} />
               <span>Logout</span>
             </button>
           </div>
