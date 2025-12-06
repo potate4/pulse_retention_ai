@@ -5,7 +5,7 @@ import Input from '../components/Input'
 import Button from '../components/Button'
 import Loading from '../components/Loading'
 import ThemeToggle from '../components/ThemeToggle'
-import logoMain from '../../../logo main.png'
+import logoMain from '../../../images/logo main.png'
 
 const Login = () => {
   const navigate = useNavigate()
