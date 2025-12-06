@@ -6,7 +6,7 @@ import Select from '../components/Select'
 import Button from '../components/Button'
 import Loading from '../components/Loading'
 import ThemeToggle from '../components/ThemeToggle'
-import logoMain from '../../../logo main.png'
+import logoMain from '../../../images/logo main.png'
 
 const Signup = () => {
   const navigate = useNavigate()

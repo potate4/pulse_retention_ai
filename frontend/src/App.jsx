@@ -7,6 +7,7 @@ import Signup from './pages/Signup'
 import Home from './pages/Home'
 import Landing from './pages/Landing'
 import EmailCampaign from './pages/EmailCampaign'
+import WidgetCampaign from './pages/WidgetCampaign'
 import EditTemplate from './pages/EditTemplate'
 import EmailHistory from './pages/EmailHistory'
 import Analytics from './pages/Analytics'
@@ -45,6 +46,11 @@ function App() {
         <Route path="/email-campaign" element={
           <ProtectedRoute>
             <EmailCampaign />
+          </ProtectedRoute>
+        } />
+        <Route path="/widget-campaign" element={
+          <ProtectedRoute>
+            <WidgetCampaign />
           </ProtectedRoute>
         } />
         <Route path="/edit-template" element={

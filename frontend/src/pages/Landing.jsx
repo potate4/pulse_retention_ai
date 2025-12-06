@@ -3,7 +3,7 @@ import { useAuthStore } from '../stores/authStore'
 import Button from '../components/Button'
 import ThemeToggle from '../components/ThemeToggle'
 import HeroBackground from '../components/HeroBackground'
-import logoMain from '../../../logo main.png'
+import logoMain from '../../../images/logo main.png'
 
 const Landing = () => {
   const { isAuthenticated } = useAuthStore()

@@ -4,6 +4,17 @@ import { useAuthStore } from '../stores/authStore';
 import Layout from '../components/Layout';
 import Button from '../components/Button';
 import Input from '../components/Input';
+import {
+  HiChartBar,
+  HiArrowLeft,
+  HiDownload,
+  HiSearch,
+  HiSparkles,
+  HiLightBulb,
+  HiCheckCircle,
+  HiExclamationCircle
+} from 'react-icons/hi';
+import { FiFileText } from 'react-icons/fi';
 
 /**
  * Predictions Page
@@ -289,18 +300,18 @@ export default function Predictions() {
 
         {/* Success/Error Messages */}
         {success && (
-          <div className="mb-6 p-4 bg-green-100 dark:bg-green-900/30 border border-green-400 dark:border-green-700 text-green-700 dark:text-green-400 rounded-lg">
-            <div className="flex items-center">
-              <span className="text-xl mr-2">✓</span>
+          <div className="mb-6 p-4 bg-green-100 dark:bg-green-900/30 border border-green-400 dark:border-green-700 text-green-700 dark:text-green-400 rounded-lg shadow-sm">
+            <div className="flex items-center gap-3">
+              <HiCheckCircle className="w-5 h-5 flex-shrink-0" />
               <span>{success}</span>
             </div>
           </div>
         )}
 
         {error && (
-          <div className="mb-6 p-4 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-400 rounded-lg">
-            <div className="flex items-center">
-              <span className="text-xl mr-2">⚠️</span>
+          <div className="mb-6 p-4 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-400 rounded-lg shadow-sm">
+            <div className="flex items-center gap-3">
+              <HiExclamationCircle className="w-5 h-5 flex-shrink-0" />
               <span>{error}</span>
             </div>
           </div>
@@ -321,8 +332,10 @@ export default function Predictions() {
                 </div>
               ) : batches.length === 0 ? (
                 <div className="text-center py-8">
-                  <div className="text-6xl mb-4">📊</div>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  <div className="inline-flex p-4 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full mb-4 shadow-lg">
+                    <HiChartBar className="w-12 h-12 text-white" />
+                  </div>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4 text-lg">
                     No prediction batches yet
                   </p>
                   <Button onClick={() => setShowUploadModal(true)} className="text-sm">
@@ -335,17 +348,17 @@ export default function Predictions() {
                     <div
                       key={batch.batch_id}
                       onClick={() => handleSelectBatch(batch.batch_id)}
-                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all shadow-sm hover:shadow-md ${
                         selectedBatch === batch.batch_id
-                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                          ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 shadow-md'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 bg-white dark:bg-gray-800'
                       }`}
                     >
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-semibold text-gray-900 dark:text-white text-sm">
+                      <div className="flex items-start justify-between mb-3">
+                        <h3 className="font-semibold text-gray-900 dark:text-white text-sm leading-tight">
                           {batch.batch_name}
                         </h3>
-                        <span className={`px-2 py-1 text-xs font-semibold rounded ${
+                        <span className={`px-2.5 py-1 text-xs font-semibold rounded-full flex-shrink-0 ml-2 ${
                           batch.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
                           batch.status === 'processing' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
                           'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
@@ -353,17 +366,19 @@ export default function Predictions() {
                           {batch.status}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                        {batch.total_customers} customers
-                      </p>
-                      {batch.avg_churn_probability && (
-                        <p className="text-xs text-gray-600 dark:text-gray-400">
-                          Avg Risk: {(parseFloat(batch.avg_churn_probability) * 100).toFixed(1)}%
+                      <div className="space-y-1.5">
+                        <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">
+                          <span className="font-semibold">{batch.total_customers}</span> customers
                         </p>
-                      )}
-                      <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-                        {new Date(batch.created_at).toLocaleDateString()}
-                      </p>
+                        {batch.avg_churn_probability && (
+                          <p className="text-xs text-gray-600 dark:text-gray-400">
+                            Avg Risk: <span className="font-semibold text-orange-600 dark:text-orange-400">{(parseFloat(batch.avg_churn_probability) * 100).toFixed(1)}%</span>
+                          </p>
+                        )}
+                        <p className="text-xs text-gray-500 dark:text-gray-500 pt-1 border-t border-gray-200 dark:border-gray-700">
+                          {new Date(batch.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
                   ))}
 
@@ -397,12 +412,14 @@ export default function Predictions() {
           {/* Batch Details */}
           <div className="lg:col-span-2">
             {!selectedBatch ? (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center">
-                <div className="text-6xl mb-4">👈</div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center border border-gray-200 dark:border-gray-700">
+                <div className="inline-flex p-4 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full mb-6 shadow-lg">
+                  <HiArrowLeft className="w-12 h-12 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
                   Select a Batch
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400">
+                <p className="text-gray-600 dark:text-gray-400 text-lg">
                   Click on a batch from the list to view details and predictions
                 </p>
               </div>
@@ -424,37 +441,37 @@ export default function Predictions() {
                         href={batchDetails.output_file_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center gap-2"
+                        className="px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-lg transition-all shadow-md hover:shadow-lg flex items-center gap-2 font-medium"
                       >
-                        <span>📥</span>
+                        <HiDownload className="w-5 h-5" />
                         Download CSV
                       </a>
                     )}
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Total Customers</p>
-                      <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-5 rounded-lg border border-blue-200 dark:border-blue-800 shadow-sm">
+                      <p className="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wide font-medium mb-2">Total Customers</p>
+                      <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
                         {batchDetails.total_customers}
                       </p>
                     </div>
-                    <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Avg Churn Risk</p>
-                      <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 p-5 rounded-lg border border-purple-200 dark:border-purple-800 shadow-sm">
+                      <p className="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wide font-medium mb-2">Avg Churn Risk</p>
+                      <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">
                         {batchDetails.avg_churn_probability
                           ? `${(parseFloat(batchDetails.avg_churn_probability) * 100).toFixed(1)}%`
                           : 'N/A'}
                       </p>
                     </div>
-                    <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Status</p>
-                      <p className="text-lg font-bold text-green-600 dark:text-green-400 capitalize">
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 p-5 rounded-lg border border-green-200 dark:border-green-800 shadow-sm">
+                      <p className="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wide font-medium mb-2">Status</p>
+                      <p className="text-xl font-bold text-green-600 dark:text-green-400 capitalize">
                         {batchDetails.status}
                       </p>
                     </div>
-                    <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg">
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Created</p>
+                    <div className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 p-5 rounded-lg border border-amber-200 dark:border-amber-800 shadow-sm">
+                      <p className="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wide font-medium mb-2">Created</p>
                       <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
                         {new Date(batchDetails.created_at).toLocaleString()}
                       </p>
@@ -580,10 +597,21 @@ export default function Predictions() {
                                       pred.risk_segment
                                     )}
                                     disabled={loadingAnalysis[pred.customer_id]}
-                                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded text-xs font-medium transition-colors"
+                                    className="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-lg text-xs font-medium transition-all shadow-sm hover:shadow-md flex items-center gap-1.5"
                                   >
-                                    {loadingAnalysis[pred.customer_id] ? '...' :
-                                     expandedRow === pred.customer_id ? 'Hide' : '🔍 Analyze'}
+                                    {loadingAnalysis[pred.customer_id] ? (
+                                      <>
+                                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                        <span>Loading...</span>
+                                      </>
+                                    ) : expandedRow === pred.customer_id ? (
+                                      'Hide'
+                                    ) : (
+                                      <>
+                                        <HiSearch className="w-3.5 h-3.5" />
+                                        <span>Analyze</span>
+                                      </>
+                                    )}
                                   </button>
                                 </td>
                               </tr>
@@ -598,11 +626,13 @@ export default function Predictions() {
                                         <span className="text-gray-600 dark:text-gray-400">Analyzing churn patterns...</span>
                                       </div>
                                     ) : analysisData[pred.customer_id] ? (
-                                      <div className="space-y-4">
-                                        <div className="flex items-start">
-                                          <span className="text-2xl mr-3">🤖</span>
+                                      <div className="space-y-5">
+                                        <div className="flex items-start gap-4 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
+                                          <div className="flex-shrink-0 p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg">
+                                            <HiSparkles className="w-5 h-5 text-white" />
+                                          </div>
                                           <div className="flex-1">
-                                            <h4 className="font-bold text-gray-900 dark:text-white mb-2">AI Analysis:</h4>
+                                            <h4 className="font-bold text-gray-900 dark:text-white mb-2 text-base">AI Analysis</h4>
                                             <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
                                               {analysisData[pred.customer_id].analysis}
                                             </p>
@@ -610,11 +640,13 @@ export default function Predictions() {
                                         </div>
 
                                         {analysisData[pred.customer_id].key_patterns && analysisData[pred.customer_id].key_patterns.length > 0 && (
-                                          <div className="flex items-start">
-                                            <span className="text-2xl mr-3">📊</span>
+                                          <div className="flex items-start gap-4 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                            <div className="flex-shrink-0 p-2 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg">
+                                              <HiChartBar className="w-5 h-5 text-white" />
+                                            </div>
                                             <div className="flex-1">
-                                              <h4 className="font-bold text-gray-900 dark:text-white mb-2">Key Patterns:</h4>
-                                              <ul className="list-disc list-inside space-y-1">
+                                              <h4 className="font-bold text-gray-900 dark:text-white mb-2 text-base">Key Patterns</h4>
+                                              <ul className="list-disc list-inside space-y-1.5">
                                                 {analysisData[pred.customer_id].key_patterns.map((pattern, i) => (
                                                   <li key={i} className="text-gray-700 dark:text-gray-300 text-sm">{pattern}</li>
                                                 ))}
@@ -624,11 +656,13 @@ export default function Predictions() {
                                         )}
 
                                         {analysisData[pred.customer_id].retention_tips && analysisData[pred.customer_id].retention_tips.length > 0 && (
-                                          <div className="flex items-start">
-                                            <span className="text-2xl mr-3">💡</span>
+                                          <div className="flex items-start gap-4 p-4 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                                            <div className="flex-shrink-0 p-2 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-lg">
+                                              <HiLightBulb className="w-5 h-5 text-white" />
+                                            </div>
                                             <div className="flex-1">
-                                              <h4 className="font-bold text-gray-900 dark:text-white mb-2">Retention Recommendations:</h4>
-                                              <ul className="list-disc list-inside space-y-1">
+                                              <h4 className="font-bold text-gray-900 dark:text-white mb-2 text-base">Retention Recommendations</h4>
+                                              <ul className="list-disc list-inside space-y-1.5">
                                                 {analysisData[pred.customer_id].retention_tips.map((tip, i) => (
                                                   <li key={i} className="text-gray-700 dark:text-gray-300 text-sm">{tip}</li>
                                                 ))}
@@ -704,23 +738,29 @@ export default function Predictions() {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     CSV File
                   </label>
-                  <input
-                    type="file"
-                    accept=".csv"
-                    onChange={handleFileSelect}
-                    className="block w-full text-sm text-gray-900 dark:text-white
-                      file:mr-4 file:py-2 file:px-4
-                      file:rounded-lg file:border-0
-                      file:text-sm file:font-semibold
-                      file:bg-blue-50 file:text-blue-700
-                      hover:file:bg-blue-100
-                      dark:file:bg-blue-900 dark:file:text-blue-300
-                      dark:hover:file:bg-blue-800"
-                  />
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept=".csv"
+                      onChange={handleFileSelect}
+                      className="block w-full text-sm text-gray-900 dark:text-white
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-lg file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-gradient-to-r file:from-blue-50 file:to-indigo-50 file:text-blue-700
+                        hover:file:from-blue-100 hover:file:to-indigo-100
+                        dark:file:from-blue-900 dark:file:to-indigo-900 dark:file:text-blue-300
+                        dark:hover:file:from-blue-800 dark:hover:file:to-indigo-800
+                        file:shadow-sm hover:file:shadow-md file:transition-all"
+                    />
+                  </div>
                   {uploadFile && (
-                    <p className="mt-2 text-sm text-green-600 dark:text-green-400">
-                      ✓ Selected: {uploadFile.name}
-                    </p>
+                    <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-center gap-2">
+                      <HiCheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+                      <p className="text-sm text-green-700 dark:text-green-400 font-medium">
+                        Selected: <span className="font-semibold">{uploadFile.name}</span>
+                      </p>
+                    </div>
                   )}
                 </div>
 

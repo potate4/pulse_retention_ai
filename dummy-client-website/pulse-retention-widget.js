@@ -7,14 +7,39 @@
   console.log(`[Pulse Retention Widget v${WIDGET_VERSION}] Initializing...`);
 
   // Read attributes from the script tag
-  const currentScript = document.currentScript;
+  // When script is dynamically loaded, document.currentScript is null
+  // So we find the script by its src attribute
+  let currentScript = document.currentScript;
+  if (!currentScript) {
+    // Find script by src containing pulse-retention-widget.js
+    const allScripts = document.querySelectorAll('script[src*="pulse-retention-widget.js"]');
+    if (allScripts.length > 0) {
+      currentScript = allScripts[allScripts.length - 1]; // Get the most recently added one
+    } else {
+      // Last resort: find any script with data-business-id
+      const scripts = document.querySelectorAll('script[data-business-id]');
+      currentScript = scripts[scripts.length - 1];
+    }
+  }
+
   const businessId = currentScript?.getAttribute('data-business-id') || 'UNKNOWN';
   const customerEmail = currentScript?.getAttribute('data-email') || 'UNKNOWN';
-  const apiUrl = currentScript?.getAttribute('data-api-url') || 'http://127.0.0.1:5000';
+  const apiUrl = currentScript?.getAttribute('data-api-url') || 'http://127.0.0.1:8000';
+  const personalizedAttr = currentScript?.getAttribute('data-personalized');
+  let usePersonalized = personalizedAttr === 'true';
 
+  console.log('[Pulse Retention Widget] Script Element:', currentScript);
   console.log('[Pulse Retention Widget] Business ID:', businessId);
   console.log('[Pulse Retention Widget] Customer Email:', customerEmail);
   console.log('[Pulse Retention Widget] API URL:', apiUrl);
+  console.log('[Pulse Retention Widget] Personalized Attribute (raw):', personalizedAttr, '(type:', typeof personalizedAttr, ')');
+  console.log('[Pulse Retention Widget] Personalized (parsed):', usePersonalized, '(type:', typeof usePersonalized, ')');
+  
+  // CRITICAL: If attribute is not found, default to true for demo
+  if (personalizedAttr === null || personalizedAttr === undefined) {
+    console.warn('[Pulse Retention Widget] WARNING: data-personalized attribute not found! Defaulting to true for demo.');
+    usePersonalized = true;
+  }
 
   // Inject CSS styles dynamically
   function injectStyles() {
@@ -233,8 +258,45 @@
 
   // Fetch popup data from backend
   function fetchPopupData() {
-    const url = `${apiUrl}/api/v1/widget/offers?business_id=${encodeURIComponent(businessId)}&customer_email=${encodeURIComponent(customerEmail)}`;
+    // Re-read attributes right before making the API call to ensure we have the latest values
+    let scriptForFetch = document.currentScript;
+    if (!scriptForFetch) {
+      const allScripts = document.querySelectorAll('script[src*="pulse-retention-widget.js"]');
+      if (allScripts.length > 0) {
+        scriptForFetch = allScripts[allScripts.length - 1];
+      }
+    }
     
+    // Re-read personalized attribute
+    let personalizedAttrFresh = scriptForFetch?.getAttribute('data-personalized');
+    let usePersonalizedFresh = personalizedAttrFresh === 'true';
+    
+    // If still not found, try one more time with a broader search
+    if (!scriptForFetch || personalizedAttrFresh === null) {
+      console.warn('[Pulse Retention Widget] Script not found, trying broader search...');
+      const allScriptsWithAttrs = document.querySelectorAll('script[data-personalized]');
+      if (allScriptsWithAttrs.length > 0) {
+        scriptForFetch = allScriptsWithAttrs[allScriptsWithAttrs.length - 1];
+        personalizedAttrFresh = scriptForFetch.getAttribute('data-personalized');
+        usePersonalizedFresh = personalizedAttrFresh === 'true';
+      }
+    }
+    
+    // Final fallback: default to true for demo if not found
+    if (personalizedAttrFresh === null || personalizedAttrFresh === undefined) {
+      console.warn('[Pulse Retention Widget] WARNING: data-personalized not found anywhere! Defaulting to TRUE for demo.');
+      usePersonalizedFresh = true;
+    }
+    
+    console.log('[Pulse Retention Widget] Re-reading attributes for fetch...');
+    console.log('[Pulse Retention Widget] Fresh personalized attribute:', personalizedAttrFresh);
+    console.log('[Pulse Retention Widget] Fresh usePersonalized:', usePersonalizedFresh);
+    
+    const url = `${apiUrl}/api/v1/widget/offers?business_id=${encodeURIComponent(businessId)}&customer_email=${encodeURIComponent(customerEmail)}&personalized=${usePersonalizedFresh}`;
+    
+    console.log('[Pulse Retention Widget] Fetching from URL:', url);
+    console.log('[Pulse Retention Widget] usePersonalized value:', usePersonalizedFresh, '(type:', typeof usePersonalizedFresh, ')');
+
     return fetch(url)
       .then(response => {
         if (!response.ok) {
